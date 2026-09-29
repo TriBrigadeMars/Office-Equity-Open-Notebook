@@ -266,8 +266,17 @@ function buildPython(repo) {
   // runtime so the desktop app works fully offline. Pin the extra to the
   // installed content-core version so its transitive deps stay compatible
   // with the locked base install.
+  // `cp()` copies the *contents* of the uv-managed interpreter directory, so
+  // python.exe ends up directly in `dest`. Keep the nested fallback for older
+  // uv layouts that shipped a `python/` subfolder.
+  const ccorePython = fs.existsSync(path.join(dest, 'python', 'python.exe'))
+    ? path.join(dest, 'python', 'python.exe')
+    : path.join(dest, 'python.exe');
+  if (!fs.existsSync(ccorePython)) {
+    throw new Error(`Could not find the bundled Python interpreter under ${dest} (looked for python.exe).`);
+  }
   const ccoreVersion = runCapture(
-    path.join(dest, 'python', 'python.exe'),
+    ccorePython,
     ['-c', "import importlib.metadata as m; print(m.version('content-core'))"],
     { env: { ...process.env, PYTHONPATH: path.join(buildDir, 'site-packages') } }
   );

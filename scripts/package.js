@@ -101,15 +101,21 @@ function main() {
     cp(path.join(PROJECT_DIR, item), path.join(appRes, item));
   }
   cp(path.join(PROJECT_DIR, 'scripts'), path.join(appRes, 'scripts'));
+  // The window/taskbar icon is loaded at runtime from `assets/icon.ico`
+  // relative to the app code, so it has to ship alongside it.
+  const assetsDir = path.join(PROJECT_DIR, 'assets');
+  if (fs.existsSync(assetsDir)) {
+    cp(assetsDir, path.join(appRes, 'assets'));
+  }
 
   // 4. Copy the bundled runtime into resources/runtime
   console.log('  copying bundled runtime (this is large)...');
   cp(RUNTIME_DIR, path.join(appDir, 'resources', 'runtime'));
 
   // 5. Set icon and version metadata on the exe using rcedit.
-  const iconSrc = path.join(PROJECT_DIR, '..', 'open-notebook', 'frontend', 'src', 'app', 'favicon.ico');
+  const iconSrc = path.join(PROJECT_DIR, 'assets', 'icon.ico');
   const rcedit = path.join(PROJECT_DIR, 'resources', '.cache', 'rcedit', 'rcedit.exe');
-  if (fs.existsSync(productExe) && fs.existsSync(rcedit)) {
+  if (fs.existsSync(productExe) && fs.existsSync(rcedit) && fs.existsSync(iconSrc)) {
     console.log('  setting exe icon and metadata...');
     run(rcedit, [
       productExe,

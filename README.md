@@ -135,17 +135,37 @@ npm install
 #    downloads SurrealDB + Node.js binaries. Needs network, ~2 GB disk.
 npm run prepare:runtime
 
-# 4. Run the app in dev mode
+# 4. Generate the app icon (assets/icon.ico) from assets/icon.png
+npm run build:icons
+
+# 5. Run the app in dev mode
 npm start
 
-# 5. Build the unpacked app folder
+# 6. Build the unpacked app folder
 npm run package:app
 
-# 6. Build the Windows installer
+# 7. Build the Windows installer
 #    Requires NSIS 3.x in resources/.cache/nsis/ and rcedit.exe in
 #    resources/.cache/rcedit/
 npm run installer
 ```
+
+> **App icon** — drop a square PNG (1024×1024 recommended) at `assets/icon.png`
+> and run `npm run build:icons`. It generates the multi-resolution
+> `assets/icon.ico` used for the window/taskbar, the packaged `.exe`, and the
+> installer. If `assets/icon.png` is absent, `build-icons.js` fails with a clear
+> message; `package.js` and `build-installer.js` fall back to the default
+> Electron icon.
+>
+> **In-app branding** — the GUI itself is served by the upstream Next.js
+> frontend, so its two brand surfaces (the sidebar mark left of the app name and
+> the browser-tab favicon) are rebranded by `scripts/apply-branding.js` during
+> `npm run prepare:runtime`. The script rewrites the upstream sidebar component
+> and favicon in the temp build directory, so the `../open-notebook` clone stays
+> pristine and no fork is needed. Source artwork is `assets/cu-logo.png`; drop a
+> replacement there and re-run `npm run prepare:runtime -- --step frontend` to
+> rebrand. `scripts/verify-runtime.js` fails the build if the branding does not
+> reach the assembled runtime.
 
 ---
 
@@ -158,6 +178,8 @@ This desktop app was created by wrapping the upstream [Open Notebook](https://gi
 ```
 Office of Equity Open Notebook.exe
 ├── Electron shell          → Native Windows window + lifecycle
+├── assets/icon.ico         → Window/taskbar, exe, and installer icon
+├── assets/cu-logo.png      → In-GUI sidebar mark + browser favicon source
 ├── resources/runtime/
 │   ├── backend/            → FastAPI REST API + LangGraph workflows
 │   ├── frontend/           → Next.js standalone production server
@@ -168,6 +190,8 @@ Office of Equity Open Notebook.exe
 ├── scripts/
 │   ├── start-services.js   → Spawns SurrealDB, API, worker, frontend
 │   ├── prepare-runtime.js  → Assembles the runtime from source
+│   ├── build-icons.js      → Generates assets/icon.ico from assets/icon.png
+│   ├── apply-branding.js   → Rebrands the upstream frontend (sidebar + favicon)
 │   ├── package.js          → Manual packaging (no electron-builder)
 │   └── build-installer.js  → NSIS installer generator
 └── User data → %APPDATA%\Office of Equity Open Notebook\
@@ -183,6 +207,8 @@ Office of Equity Open Notebook.exe
 | **Electron** over Tauri | Mature packaging, full API surface for process management |
 | **Manual packaging** over electron-builder | Avoids symlink issues on non-admin Windows |
 | **NSIS installer** | Three optional components, clean uninstall |
+| **Hand-rolled icon builder** | Keeps the build dependency-free and offline-reproducible |
+| **Branding as a build step, not a fork** | Upstream stays pristine and rebrands are one command, so upstream updates stay mergeable |
 | **Bundled Python + Node** | Zero system dependencies for end users |
 | **Docling pre-installed** | The upstream installs it on first boot; we bundle it so the app works fully offline |
 | **Separate user-data folder** | User data survives app updates and uninstalls |

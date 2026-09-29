@@ -16,6 +16,13 @@ const { startServices } = require('./scripts/start-services');
 
 const FRONTEND_URL = 'http://127.0.0.1:8502';
 
+function resolveIconPath() {
+  // In development this is the repo root; when packaged, `assets/` is copied
+  // next to the app code in `resources/app`, so the same relative path works.
+  const icon = path.join(__dirname, 'assets', 'icon.ico');
+  return fs.existsSync(icon) ? icon : undefined;
+}
+
 function resolveRuntimePath() {
   if (app.isPackaged) {
     return path.join(process.resourcesPath, 'runtime');
@@ -64,6 +71,7 @@ function createWindow() {
     minWidth: 1024,
     minHeight: 700,
     title: 'Office of Equity Open Notebook',
+    icon: resolveIconPath(),
     backgroundColor: '#0b0b0f',
     autoHideMenuBar: true,
     webPreferences: {

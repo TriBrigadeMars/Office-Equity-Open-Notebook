@@ -106,6 +106,11 @@ function main() {
     const installerPath = path.join(DIST_DIR, INSTALLER_NAME);
     fs.mkdirSync(DIST_DIR, { recursive: true });
     const nsisInstallerPath = installerPath.replace(/\\/g, '\\\\').replace(/"/g, '$\\"');
+    // NSIS accepts forward slashes in paths, which avoids backslash escaping.
+    const iconPath = path.join(PROJECT_DIR, 'assets', 'icon.ico');
+    const iconDefines = fs.existsSync(iconPath)
+      ? `!define MUI_ICON "${iconPath.replace(/\\/g, '/')}"\n!define MUI_UNICON "${iconPath.replace(/\\/g, '/')}"`
+      : '';
     const script = `
 !include "MUI2.nsh"
 Name "${PRODUCT_NAME}"
@@ -115,6 +120,7 @@ InstallDirRegKey HKLM "Software\\${PRODUCT_NAME}" "InstallDir"
 RequestExecutionLevel admin
 Unicode true
 !define MUI_ABORTWARNING
+${iconDefines}
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_DIRECTORY

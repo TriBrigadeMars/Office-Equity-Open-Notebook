@@ -11,6 +11,7 @@
   "private": true,
   "scripts": {
     "prepare:runtime": "node scripts/prepare-runtime.js",
+    "build:icons": "node scripts/build-icons.js",
     "start": "electron .",
     "package:app": "node scripts/package.js",
     "installer": "node scripts/build-installer.js"

@@ -19,6 +19,7 @@ const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { verifyFrontend } = require('./verify-runtime');
 
 const PROJECT_DIR = path.join(__dirname, '..');
 const APP_DIR = path.join(PROJECT_DIR, 'out', 'Office of Equity Open Notebook');
@@ -84,9 +85,22 @@ function main() {
     console.log(`Staging installer components in ${shortRoot}...`);
     fs.mkdirSync(shortRoot, { recursive: true });
 
-    runRobocopy([APP_DIR, shortAppRequired, '/E', '/MT:16', '/XD', 'python', 'node', '/NFL', '/NDL', '/NJH', '/NJS']);
-    runRobocopy([path.join(APP_DIR, 'resources', 'runtime', 'python'), path.join(shortAppPython, 'python'), '/E', '/MT:16', '/NFL', '/NDL', '/NJH', '/NJS']);
-    runRobocopy([path.join(APP_DIR, 'resources', 'runtime', 'node'), path.join(shortAppNode, 'node'), '/E', '/MT:16', '/NFL', '/NDL', '/NJH', '/NJS']);
+    // Exclude the two runtimes by FULL path. A bare `/XD python node` matches
+    // directories with those names at any depth, which silently drops unrelated
+    // files such as node_modules/next/dist/server/api-utils/node/*.
+    const runtimeDir = path.join(APP_DIR, 'resources', 'runtime');
+    const pythonSrc = path.join(runtimeDir, 'python');
+    const nodeSrc = path.join(runtimeDir, 'node');
+    runRobocopy([APP_DIR, shortAppRequired, '/E', '/MT:16', '/XD', pythonSrc, nodeSrc, '/NFL', '/NDL', '/NJH', '/NJS']);
+    runRobocopy([pythonSrc, path.join(shortAppPython, 'python'), '/E', '/MT:16', '/NFL', '/NDL', '/NJH', '/NJS']);
+    runRobocopy([nodeSrc, path.join(shortAppNode, 'node'), '/E', '/MT:16', '/NFL', '/NDL', '/NJH', '/NJS']);
+
+    // Fail the build if staging lost or mangled anything the frontend needs.
+    const stagedFrontend = path.join(shortAppRequired, 'resources', 'runtime', 'frontend');
+    const problems = verifyFrontend(stagedFrontend);
+    if (problems.length > 0) {
+      throw new Error(`Staged frontend is broken:\n  - ${problems.join('\n  - ')}`);
+    }
 
     // Write the NSIS script with optional components for Python and Node.
     const installerPath = path.join(DIST_DIR, INSTALLER_NAME);

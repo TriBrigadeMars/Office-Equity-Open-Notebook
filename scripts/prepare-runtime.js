@@ -28,6 +28,7 @@ const path = require('path');
 const crypto = require('crypto');
 const https = require('https');
 const http = require('http');
+const { verifyFrontend } = require('./verify-runtime');
 
 const PROJECT_DIR = path.join(__dirname, '..');
 const RUNTIME_DIR = path.join(PROJECT_DIR, 'resources', 'runtime');
@@ -164,11 +165,16 @@ function cp(src, dest, opts = {}) {
 
 function buildFrontend(repo) {
   const src = path.join(repo, 'frontend');
-  const buildDir = path.join(CACHE_DIR, 'frontend-build');
+  // Build OUTSIDE this project tree. This repo has its own package-lock.json;
+  // if the build dir sits underneath it (e.g. resources/.cache), Next.js infers
+  // the project root as the workspace root and nests the standalone output under
+  // resources/.cache/frontend-build/, so server.js is no longer at the top.
+  // A space-free temp path also keeps the toolchain happy on Windows.
+  const buildDir = path.join(os.tmpdir(), 'onb-frontend-build');
 
   // Copy the frontend source into a temp build directory so we don't mutate
   // the upstream clone (especially package-lock.json).
-  log('frontend', 'Copying frontend source to temp build directory');
+  log('frontend', `Copying frontend source to temp build directory (${buildDir})`);
   rmrf(buildDir);
   cp(src, buildDir, {
     filter: (s) => {
@@ -208,7 +214,12 @@ function buildFrontend(repo) {
 
   // Clean up the temp build dir to save disk space.
   rmrf(buildDir);
-  log('frontend', 'Assembled frontend runtime');
+
+  const problems = verifyFrontend(dest);
+  if (problems.length > 0) {
+    throw new Error(`Assembled frontend runtime is broken:\n  - ${problems.join('\n  - ')}`);
+  }
+  log('frontend', 'Assembled and verified frontend runtime');
 }
 
 function buildPython(repo) {

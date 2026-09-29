@@ -17,6 +17,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { verifyFrontend } = require('./verify-runtime');
 
 const PROJECT_DIR = path.join(__dirname, '..');
 const RUNTIME_DIR = path.join(PROJECT_DIR, 'resources', 'runtime');
@@ -69,6 +70,13 @@ function main() {
   if (missing.length > 0) {
     console.error('Runtime not prepared or incomplete. Run `npm run prepare:runtime` first.\nMissing:');
     missing.forEach((m) => console.error(`  ${m}`));
+    process.exit(1);
+  }
+
+  const frontendProblems = verifyFrontend(path.join(RUNTIME_DIR, 'frontend'));
+  if (frontendProblems.length > 0) {
+    console.error('Frontend runtime is incomplete. Re-run `npm run prepare:runtime -- --step frontend`.');
+    frontendProblems.forEach((p) => console.error(`  - ${p}`));
     process.exit(1);
   }
 

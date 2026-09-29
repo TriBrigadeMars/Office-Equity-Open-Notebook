@@ -131,6 +131,26 @@ function verifyFrontend(frontendDir = DEFAULT_FRONTEND) {
     }
   }
 
+  // 5. The Office of Equity rebrand must have reached the build. The sidebar
+  // mark ships as a static file in public/ plus a <img src="/cu-logo.png"> in a
+  // client chunk, so a passing check needs both halves present.
+  const brandedLogo = path.join(frontendDir, 'public', 'cu-logo.png');
+  if (!fs.existsSync(brandedLogo)) {
+    problems.push('public/cu-logo.png is missing (Office of Equity branding was not applied).');
+  }
+  let referencesBrand = false;
+  if (fs.existsSync(staticDir)) {
+    walk(staticDir, (file) => {
+      if (referencesBrand || !file.endsWith('.js')) return;
+      if (fs.readFileSync(file, 'utf8').includes('cu-logo.png')) referencesBrand = true;
+    });
+  }
+  if (!referencesBrand) {
+    problems.push(
+      'No client chunk references cu-logo.png (the sidebar still renders the upstream pebble mark).'
+    );
+  }
+
   return problems;
 }
 

@@ -29,6 +29,7 @@ const crypto = require('crypto');
 const https = require('https');
 const http = require('http');
 const { verifyFrontend } = require('./verify-runtime');
+const { applyBranding } = require('./apply-branding');
 
 const PROJECT_DIR = path.join(__dirname, '..');
 const RUNTIME_DIR = path.join(PROJECT_DIR, 'resources', 'runtime');
@@ -182,6 +183,13 @@ function buildFrontend(repo) {
       return base !== 'node_modules' && base !== '.next';
     },
   });
+
+  // Rebrand before the build so the sidebar mark and favicon are compiled into
+  // the standalone output. Doing it here (rather than by forking upstream)
+  // mirrors how the backend step patches config.py: the clone stays pristine
+  // and the change is reproducible from this repo alone.
+  log('frontend', 'Applying Office of Equity branding');
+  applyBranding(buildDir);
 
   // The upstream lockfile pins ~108 tarball URLs to the npmmirror.com CDN
   // (a mirror of registry.npmjs.org). Newer npm refuses to fetch packages of

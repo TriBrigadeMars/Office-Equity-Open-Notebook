@@ -192,8 +192,11 @@ Office of Equity Open Notebook.exe
 │   ├── prepare-runtime.js  → Assembles the runtime from source
 │   ├── build-icons.js      → Generates assets/icon.ico from assets/icon.png
 │   ├── apply-branding.js   → Rebrands the upstream frontend (sidebar + favicon)
+│   ├── verify-runtime.js   → Validates an assembled frontend runtime
 │   ├── package.js          → Manual packaging (no electron-builder)
-│   └── build-installer.js  → NSIS installer generator
+│   ├── build-installer.js  → NSIS installer generator
+│   └── lib/                → Shared helpers (argv, child processes, fs, paths)
+│       └── paths.js        → Single source of truth for name, dirs, and ports
 └── User data → %APPDATA%\Office of Equity Open Notebook\
     ├── data/               → Uploads, podcasts, SQLite
     ├── surrealdb/          → RocksDB database files

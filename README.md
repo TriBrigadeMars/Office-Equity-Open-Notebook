@@ -148,6 +148,10 @@ npm run package:app
 #    Requires NSIS 3.x in resources/.cache/nsis/ and rcedit.exe in
 #    resources/.cache/rcedit/
 npm run installer
+
+# 8. (Releases) After `gh release upload`, confirm the published asset is
+#    complete: checks the NSIS length header, then the release's size + SHA-256
+npm run verify:installer -- --release v<version>
 ```
 
 > **App icon** — drop a square PNG (1024×1024 recommended) at `assets/icon.png`
@@ -195,6 +199,7 @@ Office of Equity Open Notebook.exe
 │   ├── verify-runtime.js   → Validates an assembled frontend runtime
 │   ├── package.js          → Manual packaging (no electron-builder)
 │   ├── build-installer.js  → NSIS installer generator
+│   ├── verify-installer.js → Detects truncated installers / compares to a release asset
 │   └── lib/                → Shared helpers (argv, child processes, fs, paths)
 │       └── paths.js        → Single source of truth for name, dirs, and ports
 └── User data → %APPDATA%\Office of Equity Open Notebook\

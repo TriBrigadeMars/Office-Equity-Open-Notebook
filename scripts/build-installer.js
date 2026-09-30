@@ -20,6 +20,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { verifyFrontend } = require('./verify-runtime');
+const { verifyInstaller } = require('./verify-installer');
 const { arg, run } = require('./lib/cli');
 const { PROJECT_DIR, CACHE_DIR, APP_DIR, DIST_DIR, PRODUCT_NAME, VERSION } = require('./lib/paths');
 
@@ -154,6 +155,11 @@ SectionEnd
 
     console.log('Building installer with NSIS (this compresses ~800 MB, please wait)...');
     run(makensis, [scriptPath], { cwd: shortRoot, timeout: 2400000 });
+
+    const installerProblems = verifyInstaller(installerPath);
+    if (installerProblems.length > 0) {
+      throw new Error(`Installer failed integrity check:\n  - ${installerProblems.join('\n  - ')}`);
+    }
 
     console.log(`\n✅ Installer created: ${installerPath}`);
   } finally {

@@ -18,7 +18,6 @@
 const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 const { verifyFrontend } = require('./verify-runtime');
 const { verifyInstaller } = require('./verify-installer');
 const { arg, run } = require('./lib/cli');
@@ -59,6 +58,8 @@ function main() {
   const shortAppPython = path.join(shortRoot, 'OpenNotebook-python');
   const shortAppNode = path.join(shortRoot, 'OpenNotebook-node');
   const scriptPath = path.join(shortRoot, 'installer.nsi');
+  const installerPath = path.join(DIST_DIR, INSTALLER_NAME);
+  const partialPath = `${installerPath}.partial`;
 
   try {
     // Stage three component directories:
@@ -67,7 +68,14 @@ function main() {
     //  - node:     resources/runtime/node
     // Using robocopy /XD avoids fragile cross-directory moves on Windows.
     console.log(`Staging installer components in ${shortRoot}...`);
-    fs.mkdirSync(shortRoot, { recursive: true });
+    try {
+      fs.mkdirSync(shortRoot, { recursive: true });
+    } catch (err) {
+      throw new Error(
+        `Cannot create staging directory ${shortRoot}: ${err.message}. ` +
+          'The installer build writes to C:\\onb to stay under MAX_PATH; grant write access to that path.'
+      );
+    }
 
     // Exclude the two runtimes by FULL path. A bare `/XD python node` matches
     // directories with those names at any depth, which silently drops unrelated
@@ -87,10 +95,12 @@ function main() {
     }
 
     // Write the NSIS script with optional components for Python and Node.
-    const installerPath = path.join(DIST_DIR, INSTALLER_NAME);
+    // makensis writes a .partial file first so a killed/timed-out build cannot
+    // leave a truncated Setup.exe in dist/.
     fs.mkdirSync(DIST_DIR, { recursive: true });
-    const nsisInstallerPath = installerPath.replace(/\\/g, '\\\\').replace(/"/g, '$\\"');
+    fs.rmSync(partialPath, { force: true });
     // NSIS accepts forward slashes in paths, which avoids backslash escaping.
+    const nsisInstallerPath = partialPath.replace(/\\/g, '/').replace(/"/g, '$\\"');
     const iconPath = path.join(PROJECT_DIR, 'assets', 'icon.ico');
     const iconDefines = fs.existsSync(iconPath)
       ? `!define MUI_ICON "${iconPath.replace(/\\/g, '/')}"\n!define MUI_UNICON "${iconPath.replace(/\\/g, '/')}"`
@@ -103,6 +113,7 @@ InstallDir "$PROGRAMFILES64\\${PRODUCT_NAME}"
 InstallDirRegKey HKLM "Software\\${PRODUCT_NAME}" "InstallDir"
 RequestExecutionLevel admin
 Unicode true
+CRCCheck on
 !define MUI_ABORTWARNING
 ${iconDefines}
 !insertmacro MUI_PAGE_WELCOME
@@ -115,9 +126,11 @@ ${iconDefines}
 !insertmacro MUI_LANGUAGE "English"
 
 Section "${PRODUCT_NAME} (required)" SecApp
+  SectionIn RO
   SetOutPath "$INSTDIR"
   File /r "OpenNotebook-required\\*"
   WriteUninstaller "$INSTDIR\\Uninstall.exe"
+  WriteRegStr HKLM "Software\\${PRODUCT_NAME}" "InstallDir" "$INSTDIR"
   WriteRegStr HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${PRODUCT_NAME}" "DisplayName" "${PRODUCT_NAME}"
   WriteRegStr HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${PRODUCT_NAME}" "DisplayVersion" "${VERSION}"
   WriteRegStr HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${PRODUCT_NAME}" "Publisher" "${PRODUCT_NAME} Desktop"
@@ -156,13 +169,17 @@ SectionEnd
     console.log('Building installer with NSIS (this compresses ~800 MB, please wait)...');
     run(makensis, [scriptPath], { cwd: shortRoot, timeout: 2400000 });
 
-    const installerProblems = verifyInstaller(installerPath);
+    const installerProblems = verifyInstaller(partialPath);
     if (installerProblems.length > 0) {
       throw new Error(`Installer failed integrity check:\n  - ${installerProblems.join('\n  - ')}`);
     }
 
+    fs.rmSync(installerPath, { force: true });
+    fs.renameSync(partialPath, installerPath);
+
     console.log(`\n✅ Installer created: ${installerPath}`);
   } finally {
+    fs.rmSync(partialPath, { force: true });
     // Always clean up the staging directory, even on failure.
     try {
       fs.rmSync(shortRoot, { recursive: true, force: true });

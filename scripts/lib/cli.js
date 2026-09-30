@@ -29,21 +29,30 @@ function arg(name, def, argv = process.argv) {
  * python, tar, node, rcedit, makensis) is a real exe and must NOT go through a
  * shell, or arguments like `-r <path>` get mangled.
  */
+function commandFailed(res, cmd, args) {
+  if (res.error) {
+    return new Error(`Command failed (${res.error.code}): ${cmd} ${args.join(' ')}`);
+  }
+  if (res.status !== 0) {
+    const why = res.signal ? `signal ${res.signal}` : res.status;
+    return new Error(`Command failed (${why}): ${cmd} ${args.join(' ')}`);
+  }
+  return null;
+}
+
 function run(cmd, args, opts = {}) {
   const shell = opts.shell === true || cmd === 'npm';
   const res = spawnSync(cmd, args, { stdio: 'inherit', shell, ...opts });
-  if (res.status !== 0) {
-    throw new Error(`Command failed (${res.status}): ${cmd} ${args.join(' ')}`);
-  }
+  const err = commandFailed(res, cmd, args);
+  if (err) throw err;
   return res;
 }
 
 /** Runs a command and returns its trimmed stdout, throwing on a non-zero exit code. */
 function runCapture(cmd, args, opts = {}) {
   const res = spawnSync(cmd, args, { encoding: 'utf8', ...opts });
-  if (res.status !== 0) {
-    throw new Error(`Command failed (${res.status}): ${cmd} ${args.join(' ')}`);
-  }
+  const err = commandFailed(res, cmd, args);
+  if (err) throw err;
   return (res.stdout || '').trim();
 }
 

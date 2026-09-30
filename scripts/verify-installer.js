@@ -1,7 +1,7 @@
-﻿'use strict';
+'use strict';
 
 /**
- * verify-installer.js â€” detects truncated or corrupt NSIS installers before
+ * verify-installer.js - detects truncated or corrupt NSIS installers before
  * they are released.
  *
  * NSIS embeds the total installer length in its first header and checks it at

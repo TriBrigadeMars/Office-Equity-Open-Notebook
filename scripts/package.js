@@ -16,40 +16,15 @@
 
 const fs = require('fs');
 const path = require('path');
-const { spawnSync } = require('child_process');
 const { verifyFrontend } = require('./verify-runtime');
+const { arg, run } = require('./lib/cli');
+const { rmrf, cp } = require('./lib/fsx');
+const { PROJECT_DIR, RUNTIME_DIR, CACHE_DIR, OUT_DIR, PRODUCT_NAME, VERSION } = require('./lib/paths');
 
-const PROJECT_DIR = path.join(__dirname, '..');
-const RUNTIME_DIR = path.join(PROJECT_DIR, 'resources', 'runtime');
 const ELECTRON_DIST = path.join(PROJECT_DIR, 'node_modules', 'electron', 'dist');
-const PRODUCT_NAME = 'Office of Equity Open Notebook';
-const VERSION = require('../package.json').version;
-
-function arg(name, def) {
-  const i = process.argv.indexOf(name);
-  if (i !== -1 && process.argv[i + 1]) return process.argv[i + 1];
-  return def;
-}
-
-function rmrf(p) {
-  if (fs.existsSync(p)) fs.rmSync(p, { recursive: true, force: true });
-}
-
-function cp(src, dest, opts = {}) {
-  fs.mkdirSync(path.dirname(dest), { recursive: true });
-  fs.cpSync(src, dest, { recursive: true, dereference: true, ...opts });
-}
-
-function run(cmd, args, opts = {}) {
-  const res = spawnSync(cmd, args, { stdio: 'inherit', ...opts });
-  if (res.status !== 0) {
-    throw new Error(`Command failed (${res.status}): ${cmd} ${args.join(' ')}`);
-  }
-  return res;
-}
 
 function main() {
-  const outDir = arg('--out', path.join(PROJECT_DIR, 'out'));
+  const outDir = arg('--out', OUT_DIR);
   const appDir = path.join(outDir, PRODUCT_NAME);
 
   if (!fs.existsSync(ELECTRON_DIST)) {
@@ -114,7 +89,7 @@ function main() {
 
   // 5. Set icon and version metadata on the exe using rcedit.
   const iconSrc = path.join(PROJECT_DIR, 'assets', 'icon.ico');
-  const rcedit = path.join(PROJECT_DIR, 'resources', '.cache', 'rcedit', 'rcedit.exe');
+  const rcedit = path.join(CACHE_DIR, 'rcedit', 'rcedit.exe');
   if (fs.existsSync(productExe) && fs.existsSync(rcedit) && fs.existsSync(iconSrc)) {
     console.log('  setting exe icon and metadata...');
     run(rcedit, [

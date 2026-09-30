@@ -29,8 +29,9 @@
 const fs = require('fs');
 const path = require('path');
 const { decodePng, buildIco, fitSquare } = require('./build-icons');
+const { arg } = require('./lib/cli');
+const { PROJECT_DIR, RUNTIME_DIR } = require('./lib/paths');
 
-const PROJECT_DIR = path.join(__dirname, '..');
 const LOGO_SRC = path.join(PROJECT_DIR, 'assets', 'cu-logo.png');
 
 // Favicon frames. Browsers pick 16 for tabs and 32 for hi-density tabs; 48
@@ -125,14 +126,8 @@ function applyBranding(frontendDir) {
   writeFavicon(frontendDir, logo);
 }
 
-function arg(name, def) {
-  const i = process.argv.indexOf(name);
-  if (i !== -1 && process.argv[i + 1]) return process.argv[i + 1];
-  return def;
-}
-
 if (require.main === module) {
-  const frontendDir = path.resolve(arg('--frontend', path.join(PROJECT_DIR, 'resources', 'runtime', 'frontend')));
+  const frontendDir = path.resolve(arg('--frontend', path.join(RUNTIME_DIR, 'frontend')));
   applyBranding(frontendDir);
   console.log(`✅ Applied Office of Equity branding to ${frontendDir}`);
 }

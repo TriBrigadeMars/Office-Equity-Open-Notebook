@@ -30,10 +30,10 @@ const https = require('https');
 const http = require('http');
 const { verifyFrontend } = require('./verify-runtime');
 const { applyBranding } = require('./apply-branding');
+const { arg, run, runCapture } = require('./lib/cli');
+const { rmrf, cp, findFile } = require('./lib/fsx');
+const { PROJECT_DIR, RUNTIME_DIR, CACHE_DIR, API_URL } = require('./lib/paths');
 
-const PROJECT_DIR = path.join(__dirname, '..');
-const RUNTIME_DIR = path.join(PROJECT_DIR, 'resources', 'runtime');
-const CACHE_DIR = path.join(PROJECT_DIR, 'resources', '.cache');
 const DEFAULT_REPO = path.join(PROJECT_DIR, '..', 'open-notebook');
 
 const SURREAL_VERSION = '2.6.5';
@@ -48,41 +48,6 @@ const CHECKSUMS = {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function run(cmd, args, opts = {}) {
-  // npm is a .cmd shim on Windows and needs a shell; everything else (uv,
-  // python, tar, node) is a real exe and must NOT go through a shell, or
-  // arguments like `-r <path>` get mangled.
-  const shell = opts.shell === true || cmd === 'npm';
-  const res = spawnSync(cmd, args, {
-    stdio: 'inherit',
-    shell,
-    ...opts,
-  });
-  if (res.status !== 0) {
-    throw new Error(`Command failed (${res.status}): ${cmd} ${args.join(' ')}`);
-  }
-  return res;
-}
-
-function readFlag(args, name, def) {
-  const eq = args.find((a) => a.startsWith(`${name}=`));
-  if (eq) return eq.split('=').slice(1).join('=');
-  const i = args.indexOf(name);
-  if (i !== -1 && args[i + 1]) return args[i + 1];
-  return def;
-}
-
-function runCapture(cmd, args, opts = {}) {
-  const res = spawnSync(cmd, args, {
-    encoding: 'utf8',
-    ...opts,
-  });
-  if (res.status !== 0) {
-    throw new Error(`Command failed (${res.status}): ${cmd} ${args.join(' ')}`);
-  }
-  return (res.stdout || '').trim();
-}
 
 function log(step, msg) {
   console.log(`\n=== [${step}] ${msg} ===\n`);
@@ -136,30 +101,6 @@ function download(url, dest, expectedSha256) {
   });
 }
 
-function rmrf(p) {
-  if (fs.existsSync(p)) fs.rmSync(p, { recursive: true, force: true });
-}
-
-function findFile(dir, name) {
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isFile() && entry.name === name) return full;
-    if (entry.isDirectory()) {
-      const found = findFile(full, name);
-      if (found) return found;
-    }
-  }
-  return null;
-}
-
-function cp(src, dest, opts = {}) {
-  fs.mkdirSync(path.dirname(dest), { recursive: true });
-  // dereference: true follows symlinks (uv-managed Pythons are symlinked),
-  // which avoids EPERM on Windows when trying to recreate a symlink.
-  fs.cpSync(src, dest, { recursive: true, dereference: true, ...opts });
-}
-
 // ---------------------------------------------------------------------------
 // Steps
 // ---------------------------------------------------------------------------
@@ -208,7 +149,7 @@ function buildFrontend(repo) {
   log('frontend', 'Building Next.js standalone output');
   run('npm', ['run', 'build'], {
     cwd: buildDir,
-    env: { ...process.env, INTERNAL_API_URL: 'http://127.0.0.1:5055' },
+    env: { ...process.env, INTERNAL_API_URL: API_URL },
     timeout: 1200000,
   });
 
@@ -413,8 +354,8 @@ function buildBackend(repo) {
 
 async function main() {
   const args = process.argv.slice(2);
-  const repo = readFlag(args, '--repo', DEFAULT_REPO);
-  const step = readFlag(args, '--step', 'all');
+  const repo = arg('--repo', DEFAULT_REPO, args);
+  const step = arg('--step', 'all', args);
 
   if (!fs.existsSync(path.join(repo, 'pyproject.toml'))) {
     console.error(`Repository not found at ${repo}. Pass --repo=<path> or clone lfnovo/open-notebook.`);

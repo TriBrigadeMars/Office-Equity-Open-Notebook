@@ -21,16 +21,10 @@
 
 const fs = require('fs');
 const path = require('path');
+const { walk } = require('./lib/fsx');
+const { RUNTIME_DIR } = require('./lib/paths');
 
-const DEFAULT_FRONTEND = path.join(__dirname, '..', 'resources', 'runtime', 'frontend');
-
-function walk(dir, visit) {
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) walk(full, visit);
-    else visit(full);
-  }
-}
+const DEFAULT_FRONTEND = path.join(RUNTIME_DIR, 'frontend');
 
 /**
  * @param {string} frontendDir  Path to runtime/frontend.

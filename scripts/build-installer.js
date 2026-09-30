@@ -20,27 +20,10 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { verifyFrontend } = require('./verify-runtime');
+const { arg, run } = require('./lib/cli');
+const { PROJECT_DIR, CACHE_DIR, APP_DIR, DIST_DIR, PRODUCT_NAME, VERSION } = require('./lib/paths');
 
-const PROJECT_DIR = path.join(__dirname, '..');
-const APP_DIR = path.join(PROJECT_DIR, 'out', 'Office of Equity Open Notebook');
-const DIST_DIR = path.join(PROJECT_DIR, 'dist');
-const VERSION = require('../package.json').version;
-const PRODUCT_NAME = 'Office of Equity Open Notebook';
 const INSTALLER_NAME = `${PRODUCT_NAME}-${VERSION}-Setup.exe`;
-
-function arg(name, def) {
-  const i = process.argv.indexOf(name);
-  if (i !== -1 && process.argv[i + 1]) return process.argv[i + 1];
-  return def;
-}
-
-function run(cmd, args, opts = {}) {
-  const res = spawnSync(cmd, args, { stdio: 'inherit', ...opts });
-  if (res.status !== 0) {
-    throw new Error(`Command failed (${res.status}): ${cmd} ${args.join(' ')}`);
-  }
-  return res;
-}
 
 /**
  * robocopy uses exit codes 0–7 for success (with various informational flags).
@@ -62,7 +45,7 @@ function main() {
 
   const makensis =
     arg('--makensis', null) ||
-    path.join(PROJECT_DIR, 'resources', '.cache', 'nsis', 'nsis-3.09', 'makensis.exe');
+    path.join(CACHE_DIR, 'nsis', 'nsis-3.09', 'makensis.exe');
   if (!fs.existsSync(makensis)) {
     console.error(`makensis not found at ${makensis}. Download the NSIS 3.x zip to resources/.cache/nsis/.`);
     process.exit(1);
@@ -130,7 +113,7 @@ ${iconDefines}
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_LANGUAGE "English"
 
-Section "Office of Equity Open Notebook (required)" SecApp
+Section "${PRODUCT_NAME} (required)" SecApp
   SetOutPath "$INSTDIR"
   File /r "OpenNotebook-required\\*"
   WriteUninstaller "$INSTDIR\\Uninstall.exe"

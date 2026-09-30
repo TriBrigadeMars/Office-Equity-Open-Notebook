@@ -15,12 +15,7 @@ const { spawn, execFileSync } = require('child_process');
 const net = require('net');
 const path = require('path');
 const fs = require('fs');
-
-const PORTS = {
-  surreal: 8000,
-  api: 5055,
-  frontend: 8502,
-};
+const { PORTS, SURREAL_URL } = require('./lib/paths');
 
 /**
  * Resolve a bundled executable, falling back to a command on PATH.
@@ -184,7 +179,7 @@ async function startServices(cfg) {
     PYTHONUNBUFFERED: '1',
     PYTHONUTF8: '1',
     DATA_FOLDER: dataFolder,
-    SURREAL_URL: 'ws://127.0.0.1:8000/rpc',
+    SURREAL_URL,
     SURREAL_USER: 'root',
     SURREAL_PASSWORD: 'root',
     SURREAL_NAMESPACE: 'open_notebook',

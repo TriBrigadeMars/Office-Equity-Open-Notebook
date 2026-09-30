@@ -22,17 +22,12 @@
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
+const { arg } = require('./lib/cli');
+const { PROJECT_DIR } = require('./lib/paths');
 
-const PROJECT_DIR = path.join(__dirname, '..');
 const DEFAULT_SRC = path.join(PROJECT_DIR, 'assets', 'icon.png');
 const DEFAULT_OUT = path.join(PROJECT_DIR, 'assets', 'icon.ico');
 const SIZES = [16, 24, 32, 48, 64, 128, 256];
-
-function arg(name, def) {
-  const i = process.argv.indexOf(name);
-  if (i !== -1 && process.argv[i + 1]) return process.argv[i + 1];
-  return def;
-}
 
 // ---------------------------------------------------------------------------
 // PNG decoding

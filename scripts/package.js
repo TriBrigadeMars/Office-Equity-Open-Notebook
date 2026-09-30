@@ -87,7 +87,26 @@ function main() {
   console.log('  copying bundled runtime (this is large)...');
   cp(RUNTIME_DIR, path.join(appDir, 'resources', 'runtime'));
 
-  // 5. Set icon and version metadata on the exe using rcedit.
+  // 5. Ensure Python bytecode (.pyc) is compiled so read-only installations
+  // (like Program Files) do not suffer slow cold starts and AST re-parsing.
+  const packagedPython = path.join(appDir, 'resources', 'runtime', 'python', 'python.exe');
+  const packagedBackend = path.join(appDir, 'resources', 'runtime', 'backend');
+  const packagedLib = path.join(appDir, 'resources', 'runtime', 'python', 'Lib');
+  if (fs.existsSync(packagedPython)) {
+    console.log('  verifying/compiling Python bytecode (.pyc)...');
+    try {
+      if (fs.existsSync(packagedLib)) {
+        run(packagedPython, ['-m', 'compileall', '-q', '-j', '0', packagedLib], { timeout: 600000 });
+      }
+      if (fs.existsSync(packagedBackend)) {
+        run(packagedPython, ['-m', 'compileall', '-q', '-j', '0', packagedBackend], { timeout: 300000 });
+      }
+    } catch (err) {
+      console.warn(`  warning during bytecode compilation: ${err.message}`);
+    }
+  }
+
+  // 6. Set icon and version metadata on the exe using rcedit.
   const iconSrc = path.join(PROJECT_DIR, 'assets', 'icon.ico');
   const rcedit = path.join(CACHE_DIR, 'rcedit', 'rcedit.exe');
   if (fs.existsSync(productExe) && fs.existsSync(rcedit) && fs.existsSync(iconSrc)) {

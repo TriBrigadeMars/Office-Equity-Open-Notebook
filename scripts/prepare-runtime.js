@@ -240,7 +240,18 @@ function buildPython(repo) {
   cp(path.join(buildDir, 'site-packages'), path.join(dest, 'Lib', 'site-packages'));
   rmrf(buildDir);
 
+  compileBytecode(ccorePython, path.join(dest, 'Lib'));
   log('python', 'Python runtime ready');
+}
+
+function compileBytecode(pythonExe, targetDir) {
+  if (!fs.existsSync(pythonExe) || !fs.existsSync(targetDir)) return;
+  try {
+    log('bytecode', `Pre-compiling Python bytecode (.pyc) in ${path.basename(targetDir)}`);
+    run(pythonExe, ['-m', 'compileall', '-q', '-j', '0', targetDir], { timeout: 600000 });
+  } catch (err) {
+    console.warn(`Warning: bytecode compilation encountered an issue in ${targetDir}: ${err.message}`);
+  }
 }
 
 function parseDependencies(repo) {
@@ -346,6 +357,10 @@ function buildBackend(repo) {
   fs.writeFileSync(configFile, patched, 'utf8');
 
   log('backend', 'Backend code copied');
+  const pythonExe = fs.existsSync(path.join(RUNTIME_DIR, 'python', 'python.exe'))
+    ? path.join(RUNTIME_DIR, 'python', 'python.exe')
+    : path.join(RUNTIME_DIR, 'python', 'python', 'python.exe');
+  compileBytecode(pythonExe, dest);
 }
 
 // ---------------------------------------------------------------------------

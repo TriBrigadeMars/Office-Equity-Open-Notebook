@@ -18,6 +18,7 @@ const fs = require('fs');
 const path = require('path');
 const { verifyRuntime } = require('./verify-runtime');
 const { arg, run } = require('./lib/cli');
+const { resolveInterpreter } = require('./lib/resolve-runtimes');
 const { rmrf, cp } = require('./lib/fsx');
 const { PROJECT_DIR, RUNTIME_DIR, CACHE_DIR, OUT_DIR, PRODUCT_NAME, VERSION } = require('./lib/paths');
 
@@ -81,10 +82,14 @@ function main() {
 
   // 5. Ensure Python bytecode (.pyc) is compiled so read-only installations
   // (like Program Files) do not suffer slow cold starts and AST re-parsing.
-  const packagedPython = path.join(appDir, 'resources', 'runtime', 'python', 'python.exe');
-  const packagedBackend = path.join(appDir, 'resources', 'runtime', 'backend');
-  const packagedLib = path.join(appDir, 'resources', 'runtime', 'python', 'Lib');
-  if (fs.existsSync(packagedPython)) {
+  const packagedRuntime = path.join(appDir, 'resources', 'runtime');
+  const resolvedPackagedPython = resolveInterpreter('python', { runtimePath: packagedRuntime });
+  const packagedPython = resolvedPackagedPython && resolvedPackagedPython.source === 'bundled'
+    ? resolvedPackagedPython.path
+    : null;
+  const packagedBackend = path.join(packagedRuntime, 'backend');
+  const packagedLib = packagedPython ? path.join(path.dirname(packagedPython), 'Lib') : null;
+  if (packagedPython) {
     console.log('  verifying/compiling Python bytecode (.pyc)...');
     try {
       if (fs.existsSync(packagedLib)) {

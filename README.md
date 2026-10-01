@@ -199,7 +199,7 @@ Office of Equity Open Notebook.exe
 │   ├── lib/
 │   │   ├── service-table.js    → Declarative service commands, env, and readiness
 │   │   ├── supervisor.js       → Process spawning, readiness probes, and teardown
-│   │   ├── resolve-runtimes.js → Bundled/PATH Python and Node resolution
+│   │   ├── resolve-runtimes.js → Bundled, uv, and PATH interpreter resolution
 │   │   └── paths.js            → Single source of truth for name, dirs, and ports
 │   ├── prepare-runtime.js  → Assembles the runtime from source
 │   ├── build-icons.js      → Generates assets/icon.ico from assets/icon.png
@@ -240,7 +240,7 @@ Office of Equity Open Notebook.exe
 ## 🩺 Troubleshooting
 
 - **Ports in use** — the app checks 8000, 5055, and 8502 before starting. If any are in use, it shows an error naming the blocked port.
-- **"Runtime not found"** — re-run `npm run prepare:runtime` and rebuild.
+- **"Runtime not found"** — re-run `npm run prepare:runtime` and rebuild. Interpreter discovery is centralized in `scripts/lib/resolve-runtimes.js`.
 - **"Timed out waiting for Frontend on port 8502" or a blank window** — the bundled Next.js frontend is incomplete. `npm run prepare:runtime`, `package:app`, and `installer` now run `scripts/verify-runtime.js` and fail the build if it is. You can also run `node scripts/verify-runtime.js <path-to>/resources/runtime/frontend` against an existing install. Check `%APPDATA%\Office of Equity Open Notebook\logs\frontend.log` for the underlying error.
 - **No AI responses** — add an API key in Settings, or configure a local model server.
 - **Podcast audio** — some providers may need `ffmpeg` on your PATH.

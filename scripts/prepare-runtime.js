@@ -31,6 +31,7 @@ const http = require('http');
 const { verifyFrontend } = require('./verify-runtime');
 const { applyBranding } = require('./apply-branding');
 const { arg, run, runCapture } = require('./lib/cli');
+const { resolveInterpreter } = require('./lib/resolve-runtimes');
 const { rmrf, cp, findFile } = require('./lib/fsx');
 const { PROJECT_DIR, RUNTIME_DIR, CACHE_DIR, API_URL } = require('./lib/paths');
 
@@ -175,8 +176,11 @@ function buildPython(repo) {
   log('python', 'Installing standalone CPython 3.12 via uv');
   run('uv', ['python', 'install', '3.12'], { timeout: 600000 });
 
-  const pythonPath = runCapture('uv', ['python', 'find', '3.12']);
-  const pythonSrcDir = path.dirname(pythonPath);
+  const resolvedPython = resolveInterpreter('python', { runtimePath: RUNTIME_DIR, prefer: 'uv' });
+  if (!resolvedPython || resolvedPython.source !== 'uv') {
+    throw new Error('Could not find the uv-managed Python 3.12 interpreter.');
+  }
+  const pythonSrcDir = path.dirname(resolvedPython.path);
 
   log('python', `Copying standalone Python from ${pythonSrcDir}`);
   const dest = path.join(RUNTIME_DIR, 'python');
@@ -215,13 +219,10 @@ function buildPython(repo) {
   // runtime so the desktop app works fully offline. Pin the extra to the
   // installed content-core version so its transitive deps stay compatible
   // with the locked base install.
-  // `cp()` copies the *contents* of the uv-managed interpreter directory, so
-  // python.exe ends up directly in `dest`. Keep the nested fallback for older
-  // uv layouts that shipped a `python/` subfolder.
-  const ccorePython = fs.existsSync(path.join(dest, 'python', 'python.exe'))
-    ? path.join(dest, 'python', 'python.exe')
-    : path.join(dest, 'python.exe');
-  if (!fs.existsSync(ccorePython)) {
+  // `cp()` copies the *contents* of the uv-managed interpreter directory.
+  const resolvedCcorePython = resolveInterpreter('python', { runtimePath: RUNTIME_DIR });
+  const ccorePython = resolvedCcorePython && resolvedCcorePython.source === 'bundled' ? resolvedCcorePython.path : null;
+  if (!ccorePython) {
     throw new Error(`Could not find the bundled Python interpreter under ${dest} (looked for python.exe).`);
   }
   const ccoreVersion = runCapture(
@@ -240,7 +241,7 @@ function buildPython(repo) {
   cp(path.join(buildDir, 'site-packages'), path.join(dest, 'Lib', 'site-packages'));
   rmrf(buildDir);
 
-  compileBytecode(ccorePython, path.join(dest, 'Lib'));
+  compileBytecode(ccorePython, path.join(path.dirname(ccorePython), 'Lib'));
   log('python', 'Python runtime ready');
 }
 
@@ -322,9 +323,12 @@ function buildTiktoken() {
   log('tiktoken', 'Pre-downloading tiktoken encoding for offline use');
   const cacheDir = path.join(RUNTIME_DIR, 'tiktoken-cache');
   fs.mkdirSync(cacheDir, { recursive: true });
-  const pythonExe = path.join(RUNTIME_DIR, 'python', 'python.exe');
+  const resolvedPython = resolveInterpreter('python', { runtimePath: RUNTIME_DIR });
+  if (!resolvedPython || resolvedPython.source !== 'bundled') {
+    throw new Error(`Could not find the bundled Python interpreter under ${RUNTIME_DIR}.`);
+  }
   run(
-    pythonExe,
+    resolvedPython.path,
     ['-c', "import tiktoken; tiktoken.get_encoding('o200k_base')"],
     { env: { ...process.env, TIKTOKEN_CACHE_DIR: cacheDir }, timeout: 300000 }
   );
@@ -357,10 +361,10 @@ function buildBackend(repo) {
   fs.writeFileSync(configFile, patched, 'utf8');
 
   log('backend', 'Backend code copied');
-  const pythonExe = fs.existsSync(path.join(RUNTIME_DIR, 'python', 'python.exe'))
-    ? path.join(RUNTIME_DIR, 'python', 'python.exe')
-    : path.join(RUNTIME_DIR, 'python', 'python', 'python.exe');
-  compileBytecode(pythonExe, dest);
+  const resolvedPython = resolveInterpreter('python', { runtimePath: RUNTIME_DIR });
+  if (resolvedPython && resolvedPython.source === 'bundled') {
+    compileBytecode(resolvedPython.path, dest);
+  }
 }
 
 // ---------------------------------------------------------------------------

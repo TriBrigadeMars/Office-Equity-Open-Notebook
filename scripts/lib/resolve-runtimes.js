@@ -3,6 +3,7 @@
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { runCapture } = require('./cli');
 
 function findOnPath(command) {
   try {
@@ -14,7 +15,16 @@ function findOnPath(command) {
   }
 }
 
-function resolveInterpreter(name, runtimePath, dependencies = {}) {
+/**
+ * Resolve an interpreter from uv (when preferred), the bundled runtime, or
+ * PATH. Runtime assembly prefers uv to select the managed build interpreter;
+ * packaging and startup prefer the bundled runtime for reproducibility. Both
+ * common bundled layouts are supported: <runtime>/<name>/<name>.exe and the
+ * older <runtime>/<name>/<name>/<name>.exe layout.
+ */
+function resolveInterpreter(name, options = {}, dependencies = {}) {
+  if (typeof options === 'string') options = { runtimePath: options };
+  const { runtimePath, prefer } = options;
   const interpreters = {
     python: { directory: 'python', executable: 'python.exe' },
     node: { directory: 'node', executable: 'node.exe' },
@@ -25,8 +35,19 @@ function resolveInterpreter(name, runtimePath, dependencies = {}) {
   const existsSync = dependencies.existsSync || fs.existsSync;
   const run = dependencies.execFileSync || execFileSync;
   const lookup = dependencies.findOnPath || findOnPath;
-  const bundled = path.join(runtimePath, interpreter.directory, interpreter.executable);
-  if (existsSync(bundled)) return { path: bundled, source: 'bundled' };
+  const capture = dependencies.runCapture || runCapture;
+
+  if (prefer === 'uv' && name === 'python') {
+    const uvPython = capture('uv', ['python', 'find', '3.12']);
+    if (uvPython) return { path: uvPython, source: 'uv' };
+  }
+
+  const bundledCandidates = [
+    path.join(runtimePath, interpreter.directory, interpreter.executable),
+    path.join(runtimePath, interpreter.directory, interpreter.directory, interpreter.executable),
+  ];
+  const bundled = bundledCandidates.find((candidate) => existsSync(candidate));
+  if (bundled) return { path: bundled, source: 'bundled' };
 
   const system = lookup(`${name}.exe`) || lookup(name);
   if (!system) return null;

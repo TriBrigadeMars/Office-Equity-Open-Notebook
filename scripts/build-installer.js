@@ -18,28 +18,12 @@
 const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
+const { verifyFrontend } = require('./verify-runtime');
+const { verifyInstaller } = require('./verify-installer');
+const { arg, run } = require('./lib/cli');
+const { PROJECT_DIR, CACHE_DIR, APP_DIR, DIST_DIR, PRODUCT_NAME, VERSION } = require('./lib/paths');
 
-const PROJECT_DIR = path.join(__dirname, '..');
-const APP_DIR = path.join(PROJECT_DIR, 'out', 'Office of Equity Open Notebook');
-const DIST_DIR = path.join(PROJECT_DIR, 'dist');
-const VERSION = '1.14.0';
-const PRODUCT_NAME = 'Office of Equity Open Notebook';
 const INSTALLER_NAME = `${PRODUCT_NAME}-${VERSION}-Setup.exe`;
-
-function arg(name, def) {
-  const i = process.argv.indexOf(name);
-  if (i !== -1 && process.argv[i + 1]) return process.argv[i + 1];
-  return def;
-}
-
-function run(cmd, args, opts = {}) {
-  const res = spawnSync(cmd, args, { stdio: 'inherit', ...opts });
-  if (res.status !== 0) {
-    throw new Error(`Command failed (${res.status}): ${cmd} ${args.join(' ')}`);
-  }
-  return res;
-}
 
 /**
  * robocopy uses exit codes 0–7 for success (with various informational flags).
@@ -61,7 +45,7 @@ function main() {
 
   const makensis =
     arg('--makensis', null) ||
-    path.join(PROJECT_DIR, 'resources', '.cache', 'nsis', 'nsis-3.09', 'makensis.exe');
+    path.join(CACHE_DIR, 'nsis', 'nsis-3.09', 'makensis.exe');
   if (!fs.existsSync(makensis)) {
     console.error(`makensis not found at ${makensis}. Download the NSIS 3.x zip to resources/.cache/nsis/.`);
     process.exit(1);
@@ -74,6 +58,8 @@ function main() {
   const shortAppPython = path.join(shortRoot, 'OpenNotebook-python');
   const shortAppNode = path.join(shortRoot, 'OpenNotebook-node');
   const scriptPath = path.join(shortRoot, 'installer.nsi');
+  const installerPath = path.join(DIST_DIR, INSTALLER_NAME);
+  const partialPath = `${installerPath}.partial`;
 
   try {
     // Stage three component directories:
@@ -82,16 +68,43 @@ function main() {
     //  - node:     resources/runtime/node
     // Using robocopy /XD avoids fragile cross-directory moves on Windows.
     console.log(`Staging installer components in ${shortRoot}...`);
-    fs.mkdirSync(shortRoot, { recursive: true });
+    try {
+      fs.mkdirSync(shortRoot, { recursive: true });
+    } catch (err) {
+      throw new Error(
+        `Cannot create staging directory ${shortRoot}: ${err.message}. ` +
+          'The installer build writes to C:\\onb to stay under MAX_PATH; grant write access to that path.'
+      );
+    }
 
-    runRobocopy([APP_DIR, shortAppRequired, '/E', '/MT:16', '/XD', 'python', 'node', '/NFL', '/NDL', '/NJH', '/NJS']);
-    runRobocopy([path.join(APP_DIR, 'resources', 'runtime', 'python'), path.join(shortAppPython, 'python'), '/E', '/MT:16', '/NFL', '/NDL', '/NJH', '/NJS']);
-    runRobocopy([path.join(APP_DIR, 'resources', 'runtime', 'node'), path.join(shortAppNode, 'node'), '/E', '/MT:16', '/NFL', '/NDL', '/NJH', '/NJS']);
+    // Exclude the two runtimes by FULL path. A bare `/XD python node` matches
+    // directories with those names at any depth, which silently drops unrelated
+    // files such as node_modules/next/dist/server/api-utils/node/*.
+    const runtimeDir = path.join(APP_DIR, 'resources', 'runtime');
+    const pythonSrc = path.join(runtimeDir, 'python');
+    const nodeSrc = path.join(runtimeDir, 'node');
+    runRobocopy([APP_DIR, shortAppRequired, '/E', '/MT:16', '/XD', pythonSrc, nodeSrc, '/NFL', '/NDL', '/NJH', '/NJS']);
+    runRobocopy([pythonSrc, path.join(shortAppPython, 'python'), '/E', '/MT:16', '/NFL', '/NDL', '/NJH', '/NJS']);
+    runRobocopy([nodeSrc, path.join(shortAppNode, 'node'), '/E', '/MT:16', '/NFL', '/NDL', '/NJH', '/NJS']);
+
+    // Fail the build if staging lost or mangled anything the frontend needs.
+    const stagedFrontend = path.join(shortAppRequired, 'resources', 'runtime', 'frontend');
+    const problems = verifyFrontend(stagedFrontend);
+    if (problems.length > 0) {
+      throw new Error(`Staged frontend is broken:\n  - ${problems.join('\n  - ')}`);
+    }
 
     // Write the NSIS script with optional components for Python and Node.
-    const installerPath = path.join(DIST_DIR, INSTALLER_NAME);
+    // makensis writes a .partial file first so a killed/timed-out build cannot
+    // leave a truncated Setup.exe in dist/.
     fs.mkdirSync(DIST_DIR, { recursive: true });
-    const nsisInstallerPath = installerPath.replace(/\\/g, '\\\\').replace(/"/g, '$\\"');
+    fs.rmSync(partialPath, { force: true });
+    // NSIS accepts forward slashes in paths, which avoids backslash escaping.
+    const nsisInstallerPath = partialPath.replace(/\\/g, '/').replace(/"/g, '$\\"');
+    const iconPath = path.join(PROJECT_DIR, 'assets', 'icon.ico');
+    const iconDefines = fs.existsSync(iconPath)
+      ? `!define MUI_ICON "${iconPath.replace(/\\/g, '/')}"\n!define MUI_UNICON "${iconPath.replace(/\\/g, '/')}"`
+      : '';
     const script = `
 !include "MUI2.nsh"
 Name "${PRODUCT_NAME}"
@@ -100,7 +113,9 @@ InstallDir "$PROGRAMFILES64\\${PRODUCT_NAME}"
 InstallDirRegKey HKLM "Software\\${PRODUCT_NAME}" "InstallDir"
 RequestExecutionLevel admin
 Unicode true
+CRCCheck on
 !define MUI_ABORTWARNING
+${iconDefines}
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_DIRECTORY
@@ -110,10 +125,12 @@ Unicode true
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_LANGUAGE "English"
 
-Section "Office of Equity Open Notebook (required)" SecApp
+Section "${PRODUCT_NAME} (required)" SecApp
+  SectionIn RO
   SetOutPath "$INSTDIR"
   File /r "OpenNotebook-required\\*"
   WriteUninstaller "$INSTDIR\\Uninstall.exe"
+  WriteRegStr HKLM "Software\\${PRODUCT_NAME}" "InstallDir" "$INSTDIR"
   WriteRegStr HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${PRODUCT_NAME}" "DisplayName" "${PRODUCT_NAME}"
   WriteRegStr HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${PRODUCT_NAME}" "DisplayVersion" "${VERSION}"
   WriteRegStr HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${PRODUCT_NAME}" "Publisher" "${PRODUCT_NAME} Desktop"
@@ -152,8 +169,17 @@ SectionEnd
     console.log('Building installer with NSIS (this compresses ~800 MB, please wait)...');
     run(makensis, [scriptPath], { cwd: shortRoot, timeout: 2400000 });
 
+    const installerProblems = verifyInstaller(partialPath);
+    if (installerProblems.length > 0) {
+      throw new Error(`Installer failed integrity check:\n  - ${installerProblems.join('\n  - ')}`);
+    }
+
+    fs.rmSync(installerPath, { force: true });
+    fs.renameSync(partialPath, installerPath);
+
     console.log(`\n✅ Installer created: ${installerPath}`);
   } finally {
+    fs.rmSync(partialPath, { force: true });
     // Always clean up the staging directory, even on failure.
     try {
       fs.rmSync(shortRoot, { recursive: true, force: true });

@@ -15,11 +15,12 @@ const { spawn, execFileSync } = require('child_process');
 const net = require('net');
 const path = require('path');
 const fs = require('fs');
+const { PORTS, SURREAL_URL } = require('./lib/paths');
 
-const PORTS = {
-  surreal: 8000,
-  api: 5055,
-  frontend: 8502,
+const STARTUP_TIMEOUTS = {
+  surreal: 120000,
+  api: 300000,
+  frontend: 180000,
 };
 
 /**
@@ -99,13 +100,25 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function waitForPort(port, timeoutMs = 60000, label = String(port)) {
+async function waitForPort(port, timeoutMs = 60000, label = String(port), childProcess = null, getErrorContext = null) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
+    if (childProcess && childProcess.exitCode !== null) {
+      const exitMsg = `${label} process exited prematurely with code ${childProcess.exitCode} (signal: ${childProcess.signalCode || 'none'}) before port ${port} became ready.`;
+      const context = getErrorContext ? getErrorContext() : '';
+      throw new Error(context ? `${exitMsg}\n\n${context}` : exitMsg);
+    }
     if (await isPortOpen(port)) return true;
     await sleep(500);
   }
-  throw new Error(`Timed out waiting for ${label} on port ${port}`);
+  if (childProcess && childProcess.exitCode !== null) {
+    const exitMsg = `${label} process exited with code ${childProcess.exitCode} before port ${port} became ready.`;
+    const context = getErrorContext ? getErrorContext() : '';
+    throw new Error(context ? `${exitMsg}\n\n${context}` : exitMsg);
+  }
+  const timeoutMsg = `Timed out waiting for ${label} on port ${port} after ${Math.round(timeoutMs / 1000)}s.`;
+  const context = getErrorContext ? getErrorContext() : '';
+  throw new Error(context ? `${timeoutMsg}\n\n${context}` : timeoutMsg);
 }
 
 /**
@@ -184,7 +197,7 @@ async function startServices(cfg) {
     PYTHONUNBUFFERED: '1',
     PYTHONUTF8: '1',
     DATA_FOLDER: dataFolder,
-    SURREAL_URL: 'ws://127.0.0.1:8000/rpc',
+    SURREAL_URL,
     SURREAL_USER: 'root',
     SURREAL_PASSWORD: 'root',
     SURREAL_NAMESPACE: 'open_notebook',
@@ -198,8 +211,41 @@ async function startServices(cfg) {
     API_PORT: String(PORTS.api),
   };
 
+  const timeouts = { ...STARTUP_TIMEOUTS, ...(cfg.timeouts || {}) };
   const children = [];
   const logStreams = new Map();
+  const recentLogs = new Map();
+
+  function appendRecentLog(name, line) {
+    if (!recentLogs.has(name)) {
+      recentLogs.set(name, []);
+    }
+    const buf = recentLogs.get(name);
+    buf.push(line);
+    if (buf.length > 25) {
+      buf.shift();
+    }
+  }
+
+  function getLogTail(name, maxLines = 15) {
+    const file = path.join(logsDir, `${name}.log`);
+    const inMem = recentLogs.get(name) || [];
+    if (inMem.length > 0) {
+      const tail = inMem.slice(-maxLines).join('\n');
+      return `Log file: ${file}\nRecent log output:\n${tail}`;
+    }
+    try {
+      if (fs.existsSync(file)) {
+        const content = fs.readFileSync(file, 'utf8');
+        const lines = content.trim().split(/\r?\n/).filter(Boolean);
+        const tail = lines.slice(-maxLines).join('\n');
+        return `Log file: ${file}\nRecent log output:\n${tail}`;
+      }
+    } catch (_) {
+      /* ignore */
+    }
+    return `Log file: ${file}`;
+  }
 
   function getLogStream(name) {
     if (!logStreams.has(name)) {
@@ -216,6 +262,7 @@ async function startServices(cfg) {
     const tag = `[${name}:${stream}]`;
     const timestamp = new Date().toISOString();
     const formatted = `${timestamp} ${tag} ${line}\n`;
+    appendRecentLog(name, formatted.trimEnd());
     const outStream = getLogStream(name);
     outStream.write(formatted);
     // Also mirror to the parent console for dev/debug visibility.
@@ -248,80 +295,90 @@ async function startServices(cfg) {
     return child;
   }
 
-  // 1. SurrealDB
-  const surrealDbFile = path.join(dataDir, 'surrealdb', 'mydatabase.db');
-  spawnService(
-    'surrealdb',
-    surrealExe,
-    ['start', '--log', 'info', '--user', 'root', '--pass', 'root', '--bind', `127.0.0.1:${PORTS.surreal}`, `rocksdb:${surrealDbFile}`],
-    { cwd: dataDir, env: backendEnv }
-  );
-  await waitForPort(PORTS.surreal, 60000, 'SurrealDB');
-
-  // 2. FastAPI backend
-  spawnService(
-    'api',
-    pythonExe,
-    ['-m', 'uvicorn', 'api.main:app', '--host', '127.0.0.1', '--port', String(PORTS.api)],
-    { cwd: backendPath, env: backendEnv }
-  );
-  await waitForPort(PORTS.api, 120000, 'API');
-
-  // 3. Background worker
-  spawnService(
-    'worker',
-    pythonExe,
-    ['-m', 'surreal_commands.cli.worker', '--import-modules', 'commands', '--max-tasks', '5'],
-    { cwd: backendPath, env: backendEnv }
-  );
-
-  // 4. Next.js frontend (standalone server)
-  const frontendEnv = {
-    ...process.env,
-    NODE_ENV: 'production',
-    PORT: String(PORTS.frontend),
-    HOSTNAME: '127.0.0.1',
-    INTERNAL_API_URL: `http://127.0.0.1:${PORTS.api}`,
-  };
-  spawnService('frontend', nodeExe, ['server.js'], { cwd: frontendDir, env: frontendEnv });
-
-  if (cfg.waitReady !== false) {
-    await waitForPort(PORTS.frontend, 120000, 'Frontend');
+  async function stopServices() {
+    // Kill in reverse order (frontend, worker, api, surreal)
+    for (const child of [...children].reverse()) {
+      try {
+        if (!child.killed && child.exitCode === null) {
+          child.kill();
+        }
+      } catch (_) {
+        /* ignore */
+      }
+    }
+    // Give them a moment to exit gracefully, then force-kill anything left.
+    await sleep(1500);
+    for (const child of children) {
+      try {
+        if (child.exitCode === null && !child.killed) {
+          child.kill('SIGKILL');
+        }
+      } catch (_) {
+        /* ignore */
+      }
+    }
+    // Close log file streams.
+    for (const stream of logStreams.values()) {
+      try {
+        stream.end();
+      } catch (_) {
+        /* ignore */
+      }
+    }
   }
 
-  return {
-    children,
-    ports: { ...PORTS },
-    async stop() {
-      // Kill in reverse order (frontend, worker, api, surreal)
-      for (const child of [...children].reverse()) {
-        try {
-          if (!child.killed) child.kill();
-        } catch (_) {
-          /* ignore */
-        }
-      }
-      // Give them a moment, then force-kill anything left.
-      await sleep(1500);
-      for (const child of children) {
-        try {
-          if (child.exitCode === null && !child.killed) {
-            child.kill('SIGKILL');
-          }
-        } catch (_) {
-          /* ignore */
-        }
-      }
-      // Close log file streams.
-      for (const stream of logStreams.values()) {
-        try {
-          stream.end();
-        } catch (_) {
-          /* ignore */
-        }
-      }
-    },
-  };
+  try {
+    // 1. SurrealDB
+    const surrealDbFile = path.join(dataDir, 'surrealdb', 'mydatabase.db');
+    const surrealChild = spawnService(
+      'surrealdb',
+      surrealExe,
+      ['start', '--log', 'info', '--user', 'root', '--pass', 'root', '--bind', `127.0.0.1:${PORTS.surreal}`, `rocksdb:${surrealDbFile}`],
+      { cwd: dataDir, env: backendEnv }
+    );
+    await waitForPort(PORTS.surreal, timeouts.surreal, 'SurrealDB', surrealChild, () => getLogTail('surrealdb'));
+
+    // 2. FastAPI backend
+    const apiChild = spawnService(
+      'api',
+      pythonExe,
+      ['-m', 'uvicorn', 'api.main:app', '--host', '127.0.0.1', '--port', String(PORTS.api)],
+      { cwd: backendPath, env: backendEnv }
+    );
+    await waitForPort(PORTS.api, timeouts.api, 'API', apiChild, () => getLogTail('api'));
+
+    // 3. Background worker
+    spawnService(
+      'worker',
+      pythonExe,
+      ['-m', 'surreal_commands.cli.worker', '--import-modules', 'commands', '--max-tasks', '5'],
+      { cwd: backendPath, env: backendEnv }
+    );
+
+    // 4. Next.js frontend (standalone server)
+    const frontendEnv = {
+      ...process.env,
+      NODE_ENV: 'production',
+      PORT: String(PORTS.frontend),
+      HOSTNAME: '127.0.0.1',
+      INTERNAL_API_URL: `http://127.0.0.1:${PORTS.api}`,
+    };
+    const frontendChild = spawnService('frontend', nodeExe, ['server.js'], { cwd: frontendDir, env: frontendEnv });
+
+    if (cfg.waitReady !== false) {
+      await waitForPort(PORTS.frontend, timeouts.frontend, 'Frontend', frontendChild, () => getLogTail('frontend'));
+    }
+
+    return {
+      children,
+      ports: { ...PORTS },
+      stop: stopServices,
+    };
+  } catch (err) {
+    // Clean up all spawned children so no orphan processes lock ports or resources
+    await stopServices();
+    throw err;
+  }
 }
 
-module.exports = { startServices, PORTS, isPortOpen, waitForPort };
+module.exports = { startServices, PORTS, STARTUP_TIMEOUTS, isPortOpen, waitForPort };

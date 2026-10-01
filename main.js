@@ -11,27 +11,22 @@
 const { app, BrowserWindow, shell, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const crypto = require('crypto');
 const { startServices } = require('./scripts/start-services');
+const { ensureEncryptionKey } = require('./scripts/lib/encryption-key');
+const { PRODUCT_NAME, FRONTEND_URL, RUNTIME_DIR } = require('./scripts/lib/paths');
 
-const FRONTEND_URL = 'http://127.0.0.1:8502';
+function resolveIconPath() {
+  // In development this is the repo root; when packaged, `assets/` is copied
+  // next to the app code in `resources/app`, so the same relative path works.
+  const icon = path.join(__dirname, 'assets', 'icon.ico');
+  return fs.existsSync(icon) ? icon : undefined;
+}
 
 function resolveRuntimePath() {
   if (app.isPackaged) {
     return path.join(process.resourcesPath, 'runtime');
   }
-  return path.join(__dirname, 'resources', 'runtime');
-}
-
-function ensureEncryptionKey(dataDir) {
-  const keyFile = path.join(dataDir, 'encryption-key.txt');
-  if (fs.existsSync(keyFile)) {
-    return fs.readFileSync(keyFile, 'utf8').trim();
-  }
-  const key = crypto.randomBytes(32).toString('hex');
-  fs.mkdirSync(dataDir, { recursive: true });
-  fs.writeFileSync(keyFile, key, 'utf8');
-  return key;
+  return RUNTIME_DIR;
 }
 
 let services = null;
@@ -63,7 +58,8 @@ function createWindow() {
     height: 900,
     minWidth: 1024,
     minHeight: 700,
-    title: 'Office of Equity Open Notebook',
+    title: PRODUCT_NAME,
+    icon: resolveIconPath(),
     backgroundColor: '#0b0b0f',
     autoHideMenuBar: true,
     webPreferences: {
@@ -110,7 +106,7 @@ app.whenReady().then(async () => {
   const missing = required.filter((p) => !fs.existsSync(p));
   if (missing.length > 0) {
     showErrorAndExit(
-      'Office of Equity Open Notebook — runtime not found',
+      `${PRODUCT_NAME} — runtime not found`,
       'The bundled runtime is incomplete. Please re-run `npm run prepare:runtime` and rebuild the app.\n\nMissing:\n' +
         missing.join('\n')
     );
@@ -125,7 +121,7 @@ app.whenReady().then(async () => {
       waitReady: true,
     });
   } catch (err) {
-    showErrorAndExit('Office of Equity Open Notebook — failed to start', String(err && err.message));
+    showErrorAndExit(`${PRODUCT_NAME} — failed to start`, String(err && err.message));
     return;
   }
 

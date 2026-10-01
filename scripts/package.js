@@ -16,39 +16,15 @@
 
 const fs = require('fs');
 const path = require('path');
-const { spawnSync } = require('child_process');
+const { verifyFrontend } = require('./verify-runtime');
+const { arg, run } = require('./lib/cli');
+const { rmrf, cp } = require('./lib/fsx');
+const { PROJECT_DIR, RUNTIME_DIR, CACHE_DIR, OUT_DIR, PRODUCT_NAME, VERSION } = require('./lib/paths');
 
-const PROJECT_DIR = path.join(__dirname, '..');
-const RUNTIME_DIR = path.join(PROJECT_DIR, 'resources', 'runtime');
 const ELECTRON_DIST = path.join(PROJECT_DIR, 'node_modules', 'electron', 'dist');
-const PRODUCT_NAME = 'Office of Equity Open Notebook';
-const VERSION = '1.14.0';
-
-function arg(name, def) {
-  const i = process.argv.indexOf(name);
-  if (i !== -1 && process.argv[i + 1]) return process.argv[i + 1];
-  return def;
-}
-
-function rmrf(p) {
-  if (fs.existsSync(p)) fs.rmSync(p, { recursive: true, force: true });
-}
-
-function cp(src, dest, opts = {}) {
-  fs.mkdirSync(path.dirname(dest), { recursive: true });
-  fs.cpSync(src, dest, { recursive: true, dereference: true, ...opts });
-}
-
-function run(cmd, args, opts = {}) {
-  const res = spawnSync(cmd, args, { stdio: 'inherit', ...opts });
-  if (res.status !== 0) {
-    throw new Error(`Command failed (${res.status}): ${cmd} ${args.join(' ')}`);
-  }
-  return res;
-}
 
 function main() {
-  const outDir = arg('--out', path.join(PROJECT_DIR, 'out'));
+  const outDir = arg('--out', OUT_DIR);
   const appDir = path.join(outDir, PRODUCT_NAME);
 
   if (!fs.existsSync(ELECTRON_DIST)) {
@@ -69,6 +45,13 @@ function main() {
   if (missing.length > 0) {
     console.error('Runtime not prepared or incomplete. Run `npm run prepare:runtime` first.\nMissing:');
     missing.forEach((m) => console.error(`  ${m}`));
+    process.exit(1);
+  }
+
+  const frontendProblems = verifyFrontend(path.join(RUNTIME_DIR, 'frontend'));
+  if (frontendProblems.length > 0) {
+    console.error('Frontend runtime is incomplete. Re-run `npm run prepare:runtime -- --step frontend`.');
+    frontendProblems.forEach((p) => console.error(`  - ${p}`));
     process.exit(1);
   }
 
@@ -93,15 +76,40 @@ function main() {
     cp(path.join(PROJECT_DIR, item), path.join(appRes, item));
   }
   cp(path.join(PROJECT_DIR, 'scripts'), path.join(appRes, 'scripts'));
+  // The window/taskbar icon is loaded at runtime from `assets/icon.ico`
+  // relative to the app code, so it has to ship alongside it.
+  const assetsDir = path.join(PROJECT_DIR, 'assets');
+  if (fs.existsSync(assetsDir)) {
+    cp(assetsDir, path.join(appRes, 'assets'));
+  }
 
   // 4. Copy the bundled runtime into resources/runtime
   console.log('  copying bundled runtime (this is large)...');
   cp(RUNTIME_DIR, path.join(appDir, 'resources', 'runtime'));
 
-  // 5. Set icon and version metadata on the exe using rcedit.
-  const iconSrc = path.join(PROJECT_DIR, '..', 'open-notebook', 'frontend', 'src', 'app', 'favicon.ico');
-  const rcedit = path.join(PROJECT_DIR, 'resources', '.cache', 'rcedit', 'rcedit.exe');
-  if (fs.existsSync(productExe) && fs.existsSync(rcedit)) {
+  // 5. Ensure Python bytecode (.pyc) is compiled so read-only installations
+  // (like Program Files) do not suffer slow cold starts and AST re-parsing.
+  const packagedPython = path.join(appDir, 'resources', 'runtime', 'python', 'python.exe');
+  const packagedBackend = path.join(appDir, 'resources', 'runtime', 'backend');
+  const packagedLib = path.join(appDir, 'resources', 'runtime', 'python', 'Lib');
+  if (fs.existsSync(packagedPython)) {
+    console.log('  verifying/compiling Python bytecode (.pyc)...');
+    try {
+      if (fs.existsSync(packagedLib)) {
+        run(packagedPython, ['-m', 'compileall', '-q', '-j', '0', packagedLib], { timeout: 600000 });
+      }
+      if (fs.existsSync(packagedBackend)) {
+        run(packagedPython, ['-m', 'compileall', '-q', '-j', '0', packagedBackend], { timeout: 300000 });
+      }
+    } catch (err) {
+      console.warn(`  warning during bytecode compilation: ${err.message}`);
+    }
+  }
+
+  // 6. Set icon and version metadata on the exe using rcedit.
+  const iconSrc = path.join(PROJECT_DIR, 'assets', 'icon.ico');
+  const rcedit = path.join(CACHE_DIR, 'rcedit', 'rcedit.exe');
+  if (fs.existsSync(productExe) && fs.existsSync(rcedit) && fs.existsSync(iconSrc)) {
     console.log('  setting exe icon and metadata...');
     run(rcedit, [
       productExe,

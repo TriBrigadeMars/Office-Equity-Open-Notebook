@@ -28,10 +28,12 @@ const path = require('path');
 const crypto = require('crypto');
 const https = require('https');
 const http = require('http');
+const { verifyFrontend } = require('./verify-runtime');
+const { applyBranding } = require('./apply-branding');
+const { arg, run, runCapture } = require('./lib/cli');
+const { rmrf, cp, findFile } = require('./lib/fsx');
+const { PROJECT_DIR, RUNTIME_DIR, CACHE_DIR, API_URL } = require('./lib/paths');
 
-const PROJECT_DIR = path.join(__dirname, '..');
-const RUNTIME_DIR = path.join(PROJECT_DIR, 'resources', 'runtime');
-const CACHE_DIR = path.join(PROJECT_DIR, 'resources', '.cache');
 const DEFAULT_REPO = path.join(PROJECT_DIR, '..', 'open-notebook');
 
 const SURREAL_VERSION = '2.6.5';
@@ -46,41 +48,6 @@ const CHECKSUMS = {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function run(cmd, args, opts = {}) {
-  // npm is a .cmd shim on Windows and needs a shell; everything else (uv,
-  // python, tar, node) is a real exe and must NOT go through a shell, or
-  // arguments like `-r <path>` get mangled.
-  const shell = opts.shell === true || cmd === 'npm';
-  const res = spawnSync(cmd, args, {
-    stdio: 'inherit',
-    shell,
-    ...opts,
-  });
-  if (res.status !== 0) {
-    throw new Error(`Command failed (${res.status}): ${cmd} ${args.join(' ')}`);
-  }
-  return res;
-}
-
-function readFlag(args, name, def) {
-  const eq = args.find((a) => a.startsWith(`${name}=`));
-  if (eq) return eq.split('=').slice(1).join('=');
-  const i = args.indexOf(name);
-  if (i !== -1 && args[i + 1]) return args[i + 1];
-  return def;
-}
-
-function runCapture(cmd, args, opts = {}) {
-  const res = spawnSync(cmd, args, {
-    encoding: 'utf8',
-    ...opts,
-  });
-  if (res.status !== 0) {
-    throw new Error(`Command failed (${res.status}): ${cmd} ${args.join(' ')}`);
-  }
-  return (res.stdout || '').trim();
-}
 
 function log(step, msg) {
   console.log(`\n=== [${step}] ${msg} ===\n`);
@@ -134,41 +101,22 @@ function download(url, dest, expectedSha256) {
   });
 }
 
-function rmrf(p) {
-  if (fs.existsSync(p)) fs.rmSync(p, { recursive: true, force: true });
-}
-
-function findFile(dir, name) {
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isFile() && entry.name === name) return full;
-    if (entry.isDirectory()) {
-      const found = findFile(full, name);
-      if (found) return found;
-    }
-  }
-  return null;
-}
-
-function cp(src, dest, opts = {}) {
-  fs.mkdirSync(path.dirname(dest), { recursive: true });
-  // dereference: true follows symlinks (uv-managed Pythons are symlinked),
-  // which avoids EPERM on Windows when trying to recreate a symlink.
-  fs.cpSync(src, dest, { recursive: true, dereference: true, ...opts });
-}
-
 // ---------------------------------------------------------------------------
 // Steps
 // ---------------------------------------------------------------------------
 
 function buildFrontend(repo) {
   const src = path.join(repo, 'frontend');
-  const buildDir = path.join(CACHE_DIR, 'frontend-build');
+  // Build OUTSIDE this project tree. This repo has its own package-lock.json;
+  // if the build dir sits underneath it (e.g. resources/.cache), Next.js infers
+  // the project root as the workspace root and nests the standalone output under
+  // resources/.cache/frontend-build/, so server.js is no longer at the top.
+  // A space-free temp path also keeps the toolchain happy on Windows.
+  const buildDir = path.join(os.tmpdir(), 'onb-frontend-build');
 
   // Copy the frontend source into a temp build directory so we don't mutate
   // the upstream clone (especially package-lock.json).
-  log('frontend', 'Copying frontend source to temp build directory');
+  log('frontend', `Copying frontend source to temp build directory (${buildDir})`);
   rmrf(buildDir);
   cp(src, buildDir, {
     filter: (s) => {
@@ -176,6 +124,13 @@ function buildFrontend(repo) {
       return base !== 'node_modules' && base !== '.next';
     },
   });
+
+  // Rebrand before the build so the sidebar mark and favicon are compiled into
+  // the standalone output. Doing it here (rather than by forking upstream)
+  // mirrors how the backend step patches config.py: the clone stays pristine
+  // and the change is reproducible from this repo alone.
+  log('frontend', 'Applying Office of Equity branding');
+  applyBranding(buildDir);
 
   // The upstream lockfile pins ~108 tarball URLs to the npmmirror.com CDN
   // (a mirror of registry.npmjs.org). Newer npm refuses to fetch packages of
@@ -194,7 +149,7 @@ function buildFrontend(repo) {
   log('frontend', 'Building Next.js standalone output');
   run('npm', ['run', 'build'], {
     cwd: buildDir,
-    env: { ...process.env, INTERNAL_API_URL: 'http://127.0.0.1:5055' },
+    env: { ...process.env, INTERNAL_API_URL: API_URL },
     timeout: 1200000,
   });
 
@@ -208,7 +163,12 @@ function buildFrontend(repo) {
 
   // Clean up the temp build dir to save disk space.
   rmrf(buildDir);
-  log('frontend', 'Assembled frontend runtime');
+
+  const problems = verifyFrontend(dest);
+  if (problems.length > 0) {
+    throw new Error(`Assembled frontend runtime is broken:\n  - ${problems.join('\n  - ')}`);
+  }
+  log('frontend', 'Assembled and verified frontend runtime');
 }
 
 function buildPython(repo) {
@@ -255,8 +215,17 @@ function buildPython(repo) {
   // runtime so the desktop app works fully offline. Pin the extra to the
   // installed content-core version so its transitive deps stay compatible
   // with the locked base install.
+  // `cp()` copies the *contents* of the uv-managed interpreter directory, so
+  // python.exe ends up directly in `dest`. Keep the nested fallback for older
+  // uv layouts that shipped a `python/` subfolder.
+  const ccorePython = fs.existsSync(path.join(dest, 'python', 'python.exe'))
+    ? path.join(dest, 'python', 'python.exe')
+    : path.join(dest, 'python.exe');
+  if (!fs.existsSync(ccorePython)) {
+    throw new Error(`Could not find the bundled Python interpreter under ${dest} (looked for python.exe).`);
+  }
   const ccoreVersion = runCapture(
-    path.join(dest, 'python', 'python.exe'),
+    ccorePython,
     ['-c', "import importlib.metadata as m; print(m.version('content-core'))"],
     { env: { ...process.env, PYTHONPATH: path.join(buildDir, 'site-packages') } }
   );
@@ -271,7 +240,18 @@ function buildPython(repo) {
   cp(path.join(buildDir, 'site-packages'), path.join(dest, 'Lib', 'site-packages'));
   rmrf(buildDir);
 
+  compileBytecode(ccorePython, path.join(dest, 'Lib'));
   log('python', 'Python runtime ready');
+}
+
+function compileBytecode(pythonExe, targetDir) {
+  if (!fs.existsSync(pythonExe) || !fs.existsSync(targetDir)) return;
+  try {
+    log('bytecode', `Pre-compiling Python bytecode (.pyc) in ${path.basename(targetDir)}`);
+    run(pythonExe, ['-m', 'compileall', '-q', '-j', '0', targetDir], { timeout: 600000 });
+  } catch (err) {
+    console.warn(`Warning: bytecode compilation encountered an issue in ${targetDir}: ${err.message}`);
+  }
 }
 
 function parseDependencies(repo) {
@@ -377,6 +357,10 @@ function buildBackend(repo) {
   fs.writeFileSync(configFile, patched, 'utf8');
 
   log('backend', 'Backend code copied');
+  const pythonExe = fs.existsSync(path.join(RUNTIME_DIR, 'python', 'python.exe'))
+    ? path.join(RUNTIME_DIR, 'python', 'python.exe')
+    : path.join(RUNTIME_DIR, 'python', 'python', 'python.exe');
+  compileBytecode(pythonExe, dest);
 }
 
 // ---------------------------------------------------------------------------
@@ -385,8 +369,8 @@ function buildBackend(repo) {
 
 async function main() {
   const args = process.argv.slice(2);
-  const repo = readFlag(args, '--repo', DEFAULT_REPO);
-  const step = readFlag(args, '--step', 'all');
+  const repo = arg('--repo', DEFAULT_REPO, args);
+  const step = arg('--step', 'all', args);
 
   if (!fs.existsSync(path.join(repo, 'pyproject.toml'))) {
     console.error(`Repository not found at ${repo}. Pass --repo=<path> or clone lfnovo/open-notebook.`);

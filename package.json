@@ -16,7 +16,7 @@
     "package:app": "node scripts/package.js",
     "installer": "node scripts/build-installer.js",
     "verify:installer": "node scripts/verify-installer.js",
-    "test": "node scripts/test/verify-runtime.test.js"
+    "test": "node scripts/test/verify-runtime.test.js && node scripts/test/supervisor.test.js"
   },
   "devDependencies": {
     "electron": "^33.2.0"

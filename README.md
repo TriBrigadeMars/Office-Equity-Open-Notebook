@@ -195,16 +195,19 @@ Office of Equity Open Notebook.exe
 │   ├── surreal/            → SurrealDB binary
 │   └── tiktoken-cache/     → Pre-downloaded encoding (offline support)
 ├── scripts/
-│   ├── start-services.js   → Spawns SurrealDB, API, worker, frontend
+│   ├── start-services.js   → Orchestrates service startup and teardown
+│   ├── lib/
+│   │   ├── service-table.js    → Declarative service commands, env, and readiness
+│   │   ├── supervisor.js       → Process spawning, readiness probes, and teardown
+│   │   ├── resolve-runtimes.js → Bundled/PATH Python and Node resolution
+│   │   └── paths.js            → Single source of truth for name, dirs, and ports
 │   ├── prepare-runtime.js  → Assembles the runtime from source
 │   ├── build-icons.js      → Generates assets/icon.ico from assets/icon.png
 │   ├── apply-branding.js   → Rebrands the upstream frontend (sidebar + favicon)
 │   ├── verify-runtime.js   → Validates an assembled frontend runtime
 │   ├── package.js          → Manual packaging (no electron-builder)
 │   ├── build-installer.js  → NSIS installer generator
-│   ├── verify-installer.js → Detects truncated installers / compares to a release asset
-│   └── lib/                → Shared helpers (argv, child processes, fs, paths)
-│       └── paths.js        → Single source of truth for name, dirs, and ports
+│   └── verify-installer.js → Detects truncated installers / compares to a release asset
 └── User data → %APPDATA%\Office of Equity Open Notebook\
     ├── data/               → Uploads, podcasts, SQLite
     ├── surrealdb/          → RocksDB database files

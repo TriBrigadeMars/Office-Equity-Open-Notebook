@@ -166,7 +166,7 @@ function buildFrontend(repo) {
 
   const problems = verifyFrontend(dest);
   if (problems.length > 0) {
-    throw new Error(`Assembled frontend runtime is broken:\n  - ${problems.join('\n  - ')}`);
+    throw new Error(`Assembled frontend runtime is broken:\n  - ${problems.map((p) => p.message).join('\n  - ')}`);
   }
   log('frontend', 'Assembled and verified frontend runtime');
 }

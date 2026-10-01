@@ -152,6 +152,9 @@ npm run installer
 # 8. (Releases) After `gh release upload`, confirm the published asset is
 #    complete: checks the NSIS length header, then the release's size + SHA-256
 npm run verify:installer -- --release v<version>
+
+# Run the verifier unit tests (fast, no assembled runtime needed)
+npm test
 ```
 
 > **App icon** — drop a square PNG (1024×1024 recommended) at `assets/icon.png`

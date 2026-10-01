@@ -91,7 +91,7 @@ function main() {
     const stagedFrontend = path.join(shortAppRequired, 'resources', 'runtime', 'frontend');
     const problems = verifyFrontend(stagedFrontend);
     if (problems.length > 0) {
-      throw new Error(`Staged frontend is broken:\n  - ${problems.join('\n  - ')}`);
+      throw new Error(`Staged frontend is broken:\n  - ${problems.map((p) => p.message).join('\n  - ')}`);
     }
 
     // Write the NSIS script with optional components for Python and Node.

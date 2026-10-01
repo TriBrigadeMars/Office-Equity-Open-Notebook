@@ -16,7 +16,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { verifyFrontend } = require('./verify-runtime');
+const { verifyRuntime } = require('./verify-runtime');
 const { arg, run } = require('./lib/cli');
 const { rmrf, cp } = require('./lib/fsx');
 const { PROJECT_DIR, RUNTIME_DIR, CACHE_DIR, OUT_DIR, PRODUCT_NAME, VERSION } = require('./lib/paths');
@@ -32,26 +32,18 @@ function main() {
     process.exit(1);
   }
 
-  const required = [
-    ['python', 'python.exe'],
-    ['backend', 'open_notebook'],
-    ['surreal', 'surreal.exe'],
-    ['node', 'node.exe'],
-    ['frontend', 'server.js'],
-  ];
-  const missing = required
-    .map(([dir, file]) => path.join(RUNTIME_DIR, dir, file))
-    .filter((p) => !fs.existsSync(p));
-  if (missing.length > 0) {
+  const runtimeProblems = verifyRuntime(RUNTIME_DIR);
+  const fileProblems = runtimeProblems.filter((p) => p.check === 'file-exists');
+  if (fileProblems.length > 0) {
     console.error('Runtime not prepared or incomplete. Run `npm run prepare:runtime` first.\nMissing:');
-    missing.forEach((m) => console.error(`  ${m}`));
+    fileProblems.forEach((p) => console.error(`  ${path.join(RUNTIME_DIR, ...p.file.split('/'))}`));
     process.exit(1);
   }
 
-  const frontendProblems = verifyFrontend(path.join(RUNTIME_DIR, 'frontend'));
+  const frontendProblems = runtimeProblems.filter((p) => p.check !== 'file-exists');
   if (frontendProblems.length > 0) {
     console.error('Frontend runtime is incomplete. Re-run `npm run prepare:runtime -- --step frontend`.');
-    frontendProblems.forEach((p) => console.error(`  - ${p}`));
+    frontendProblems.forEach((p) => console.error(`  - ${p.message}`));
     process.exit(1);
   }
 

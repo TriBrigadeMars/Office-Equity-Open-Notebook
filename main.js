@@ -14,6 +14,7 @@ const fs = require('fs');
 const { startServices } = require('./scripts/start-services');
 const { ensureEncryptionKey } = require('./scripts/lib/encryption-key');
 const { PRODUCT_NAME, FRONTEND_URL, RUNTIME_DIR } = require('./scripts/lib/paths');
+const { REQUIRED_RUNTIME_FILES } = require('./scripts/lib/runtime-manifest');
 
 function resolveIconPath() {
   // In development this is the repo root; when packaged, `assets/` is copied
@@ -98,11 +99,7 @@ app.whenReady().then(async () => {
   const dataDir = app.getPath('userData');
   const encryptionKey = ensureEncryptionKey(dataDir);
 
-  const required = [
-    path.join(runtimePath, 'surreal', 'surreal.exe'),
-    path.join(runtimePath, 'backend', 'open_notebook'),
-    path.join(runtimePath, 'frontend', 'server.js'),
-  ];
+  const required = REQUIRED_RUNTIME_FILES.map((file) => path.join(runtimePath, ...file.split('/')));
   const missing = required.filter((p) => !fs.existsSync(p));
   if (missing.length > 0) {
     showErrorAndExit(

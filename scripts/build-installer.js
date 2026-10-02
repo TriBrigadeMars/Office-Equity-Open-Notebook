@@ -22,6 +22,7 @@ const { verifyFrontend } = require('./verify-runtime');
 const { verifyInstaller } = require('./verify-installer');
 const { arg, run } = require('./lib/cli');
 const { PROJECT_DIR, CACHE_DIR, APP_DIR, DIST_DIR, PRODUCT_NAME, VERSION } = require('./lib/paths');
+const { createProblemReport, consoleRenderer } = require('./lib/problem-report');
 
 const INSTALLER_NAME = `${PRODUCT_NAME}-${VERSION}-Setup.exe`;
 
@@ -37,18 +38,28 @@ function runRobocopy(args) {
   }
 }
 
+function reportFailure(code, message) {
+  const report = createProblemReport();
+  report.add(code, message);
+  report.render(consoleRenderer, { style: 'plain' });
+  process.exitCode = report.exitCode();
+}
+
 function main() {
   if (!fs.existsSync(path.join(APP_DIR, `${PRODUCT_NAME}.exe`))) {
-    console.error(`Packaged app not found at ${APP_DIR}. Run \`npm run package:app\` first.`);
-    process.exit(1);
+    reportFailure('PACKAGED_APP_MISSING', `Packaged app not found at ${APP_DIR}. Run \`npm run package:app\` first.`);
+    return;
   }
 
   const makensis =
     arg('--makensis', null) ||
     path.join(CACHE_DIR, 'nsis', 'nsis-3.09', 'makensis.exe');
   if (!fs.existsSync(makensis)) {
-    console.error(`makensis not found at ${makensis}. Download the NSIS 3.x zip to resources/.cache/nsis/.`);
-    process.exit(1);
+    reportFailure(
+      'MAKENSIS_MISSING',
+      `makensis not found at ${makensis}. Download the NSIS 3.x zip to resources/.cache/nsis/.`
+    );
+    return;
   }
 
   // Use a unique short-root staging directory per run. This avoids MAX_PATH

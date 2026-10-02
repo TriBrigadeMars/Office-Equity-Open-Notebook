@@ -15,6 +15,7 @@ const { startServices } = require('./scripts/start-services');
 const { ensureEncryptionKey } = require('./scripts/lib/encryption-key');
 const { PRODUCT_NAME, FRONTEND_URL, RUNTIME_DIR } = require('./scripts/lib/paths');
 const { REQUIRED_RUNTIME_FILES } = require('./scripts/lib/runtime-manifest');
+const { createProblemReport } = require('./scripts/lib/problem-report');
 
 function resolveIconPath() {
   // In development this is the repo root; when packaged, `assets/` is copied
@@ -46,11 +47,21 @@ async function stopServices() {
   }
 }
 
-function showErrorAndExit(title, message) {
+function dialogRenderer(title) {
+  return (problems) => {
+    const first = problems[0];
+    const detail = first.detail || first.logTail || first.stack || '';
+    const context = first.detail && first.logTail ? `${first.detail}\n\n${first.logTail}` : detail;
+    const message = context ? `${first.message}\n\n${context}` : first.message;
+    dialog.showErrorBox(title, message);
+  };
+}
+
+function showErrorAndExit(title, report) {
   // Use a synchronous message box so the app waits for the user to click OK
   // before exiting. dialog.showErrorBox is also synchronous on Windows.
-  dialog.showErrorBox(title, message);
-  app.exit(1);
+  report.render(dialogRenderer(title));
+  app.exit(report.exitCode());
 }
 
 function createWindow() {
@@ -102,11 +113,13 @@ app.whenReady().then(async () => {
   const required = REQUIRED_RUNTIME_FILES.map((file) => path.join(runtimePath, ...file.split('/')));
   const missing = required.filter((p) => !fs.existsSync(p));
   if (missing.length > 0) {
-    showErrorAndExit(
-      `${PRODUCT_NAME} — runtime not found`,
-      'The bundled runtime is incomplete. Please re-run `npm run prepare:runtime` and rebuild the app.\n\nMissing:\n' +
-        missing.join('\n')
+    const report = createProblemReport();
+    report.add(
+      'RUNTIME_INCOMPLETE',
+      'The bundled runtime is incomplete. Please re-run `npm run prepare:runtime` and rebuild the app.',
+      { detail: `Missing:\n${missing.join('\n')}` }
     );
+    showErrorAndExit(`${PRODUCT_NAME} — runtime not found`, report);
     return;
   }
 
@@ -118,7 +131,13 @@ app.whenReady().then(async () => {
       waitReady: true,
     });
   } catch (err) {
-    showErrorAndExit(`${PRODUCT_NAME} — failed to start`, String(err && err.message));
+    const report = createProblemReport();
+    report.add('SERVICE_START_FAILED', err.summary || String(err && err.message), {
+      detail: err.detail,
+      logTail: err.logTail,
+      stack: err.stack,
+    });
+    showErrorAndExit(`${PRODUCT_NAME} — failed to start`, report);
     return;
   }
 

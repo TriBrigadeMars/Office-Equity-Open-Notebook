@@ -11,6 +11,9 @@ stack in an Electron shell, with zero Docker or system-dependency requirements.
 
 ## Runtime pieces
 
+**Problem Report** — the structured list of failures a stage produces, rendered
+to console or dialog by `scripts/lib/problem-report.js`.
+
 **Runtime** — the self-contained folder `resources/runtime/` assembled by
 `prepare-runtime.js` from a pristine upstream clone: bundled Python 3.12, the
 backend, the frontend, SurrealDB, Node.js, and the tiktoken cache.

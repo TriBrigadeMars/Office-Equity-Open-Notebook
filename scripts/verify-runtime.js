@@ -24,6 +24,7 @@ const path = require('path');
 const { walk } = require('./lib/fsx');
 const { RUNTIME_DIR } = require('./lib/paths');
 const { verifyRuntimeFiles } = require('./lib/runtime-manifest');
+const { createProblemReport, consoleRenderer } = require('./lib/problem-report');
 
 const DEFAULT_FRONTEND = path.join(RUNTIME_DIR, 'frontend');
 
@@ -178,9 +179,14 @@ if (require.main === module) {
   const dir = process.argv[2] ? path.resolve(process.argv[2]) : DEFAULT_FRONTEND;
   const problems = verifyFrontend(dir);
   if (problems.length > 0) {
-    console.error(`Frontend runtime check FAILED for ${dir}:`);
-    problems.forEach((p) => console.error(`  - ${p.message}`));
-    process.exit(1);
+    const report = createProblemReport();
+    problems.forEach((problem) => report.add(problem.check, problem.message));
+    report.render(consoleRenderer, {
+      style: 'list',
+      header: `Frontend runtime check FAILED for ${dir}:`,
+    });
+    process.exitCode = report.exitCode();
+    return;
   }
   console.log(`Frontend runtime check passed for ${dir}`);
 }

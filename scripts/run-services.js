@@ -14,6 +14,7 @@ const { startServices, PORTS } = require('./start-services');
 const { arg } = require('./lib/cli');
 const { ensureEncryptionKey } = require('./lib/encryption-key');
 const { FRONTEND_URL, PROJECT_DIR, RUNTIME_DIR } = require('./lib/paths');
+const { createProblemReport, consoleRenderer } = require('./lib/problem-report');
 
 async function main() {
   const runtime = arg('--runtime', RUNTIME_DIR);
@@ -38,6 +39,12 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('Failed to start services:', err && err.message);
-  process.exit(1);
+  const report = createProblemReport();
+  report.add('SERVICE_START_FAILED', `Failed to start services: ${err && (err.summary || err.message)}`, {
+    detail: err && err.detail,
+    logTail: err && err.logTail,
+    stack: err && err.stack,
+  });
+  report.render(consoleRenderer, { style: 'plain' });
+  process.exitCode = report.exitCode();
 });

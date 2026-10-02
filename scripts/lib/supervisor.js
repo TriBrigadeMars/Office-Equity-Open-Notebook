@@ -4,6 +4,7 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const net = require('net');
 const path = require('path');
+const { getLogTail } = require('./problem-report');
 
 function isPortOpen(port, host = '127.0.0.1') {
   return new Promise((resolve) => {
@@ -24,25 +25,32 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function createReadinessError(summary, getErrorContext) {
+  const context = getErrorContext ? getErrorContext() : '';
+  const error = new Error(context ? `${summary}\n\n${context}` : summary);
+  if (context) {
+    error.summary = summary;
+    error.logTail = context;
+  }
+  return error;
+}
+
 async function waitForPort(port, timeoutMs = 60000, label = String(port), childProcess = null, getErrorContext = null) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     if (childProcess && childProcess.exitCode !== null) {
       const exitMsg = `${label} process exited prematurely with code ${childProcess.exitCode} (signal: ${childProcess.signalCode || 'none'}) before port ${port} became ready.`;
-      const context = getErrorContext ? getErrorContext() : '';
-      throw new Error(context ? `${exitMsg}\n\n${context}` : exitMsg);
+      throw createReadinessError(exitMsg, getErrorContext);
     }
     if (await isPortOpen(port)) return true;
     await sleep(500);
   }
   if (childProcess && childProcess.exitCode !== null) {
     const exitMsg = `${label} process exited with code ${childProcess.exitCode} before port ${port} became ready.`;
-    const context = getErrorContext ? getErrorContext() : '';
-    throw new Error(context ? `${exitMsg}\n\n${context}` : exitMsg);
+    throw createReadinessError(exitMsg, getErrorContext);
   }
   const timeoutMsg = `Timed out waiting for ${label} on port ${port} after ${Math.round(timeoutMs / 1000)}s.`;
-  const context = getErrorContext ? getErrorContext() : '';
-  throw new Error(context ? `${timeoutMsg}\n\n${context}` : timeoutMsg);
+  throw createReadinessError(timeoutMsg, getErrorContext);
 }
 
 async function supervise(table, options = {}) {
@@ -64,24 +72,9 @@ async function supervise(table, options = {}) {
     if (buffer.length > 25) buffer.shift();
   }
 
-  function getLogTail(name, maxLines = 15) {
+  function getServiceLogTail(name, maxLines = 15) {
     const file = path.join(logsDir, `${name}.log`);
-    const inMemory = recentLogs.get(name) || [];
-    if (inMemory.length > 0) {
-      const tail = inMemory.slice(-maxLines).join('\n');
-      return `Log file: ${file}\nRecent log output:\n${tail}`;
-    }
-    try {
-      if (fs.existsSync(file)) {
-        const content = fs.readFileSync(file, 'utf8');
-        const lines = content.trim().split(/\r?\n/).filter(Boolean);
-        const tail = lines.slice(-maxLines).join('\n');
-        return `Log file: ${file}\nRecent log output:\n${tail}`;
-      }
-    } catch (_) {
-      // Log files are best-effort context only.
-    }
-    return `Log file: ${file}`;
+    return getLogTail(file, recentLogs.get(name) || [], maxLines);
   }
 
   function getLogStream(name) {
@@ -176,7 +169,7 @@ async function supervise(table, options = {}) {
             timeoutMs,
             service.label || service.name,
             child,
-            () => getLogTail(service.name)
+            () => getServiceLogTail(service.name)
           );
         }
       }

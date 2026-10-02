@@ -19,6 +19,7 @@ const fs = require('fs');
 const path = require('path');
 const { arg, runCapture } = require('./lib/cli');
 const { PRODUCT_NAME, VERSION, DIST_DIR } = require('./lib/paths');
+const { createProblemReport, consoleRenderer } = require('./lib/problem-report');
 
 const DEFAULT_REPO = 'oe-marscruz/Office-Equity-Open-Notebook';
 // NSIS firstheader: flags(4) | siginfo(4) | "NullsoftInst"(12) | header length(4) | following-data length(4)
@@ -94,13 +95,17 @@ if (require.main === module) {
     if (problems.length === 0 && tag) problems = await verifyRelease(file, tag, repo);
 
     if (problems.length > 0) {
-      console.error(`Installer check FAILED for ${file}:`);
-      problems.forEach((p) => console.error(`  - ${p}`));
-      process.exit(1);
+      const report = createProblemReport();
+      problems.forEach((problem) => report.add('INSTALLER_INVALID', problem));
+      report.render(consoleRenderer, { style: 'list', header: `Installer check FAILED for ${file}:` });
+      process.exitCode = report.exitCode();
+      return;
     }
     console.log(`Installer check passed for ${file}${tag ? ` (matches release ${tag})` : ''}`);
   })().catch((err) => {
-    console.error(err.message);
-    process.exit(1);
+    const report = createProblemReport();
+    report.add('INSTALLER_CHECK_FAILED', err.message);
+    report.render(consoleRenderer, { style: 'plain' });
+    process.exitCode = report.exitCode();
   });
 }

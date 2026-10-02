@@ -21,31 +21,48 @@ const { arg, run } = require('./lib/cli');
 const { resolveInterpreter } = require('./lib/resolve-runtimes');
 const { rmrf, cp } = require('./lib/fsx');
 const { PROJECT_DIR, RUNTIME_DIR, CACHE_DIR, OUT_DIR, PRODUCT_NAME, VERSION } = require('./lib/paths');
+const { createProblemReport, consoleRenderer } = require('./lib/problem-report');
 
 const ELECTRON_DIST = path.join(PROJECT_DIR, 'node_modules', 'electron', 'dist');
+
+function reportFailure(code, message) {
+  const report = createProblemReport();
+  report.add(code, message);
+  report.render(consoleRenderer, { style: 'plain' });
+  process.exitCode = report.exitCode();
+}
 
 function main() {
   const outDir = arg('--out', OUT_DIR);
   const appDir = path.join(outDir, PRODUCT_NAME);
 
   if (!fs.existsSync(ELECTRON_DIST)) {
-    console.error(`Electron dist not found at ${ELECTRON_DIST}. Run \`npm install\` first.`);
-    process.exit(1);
+    reportFailure(
+      'ELECTRON_DIST_MISSING',
+      `Electron dist not found at ${ELECTRON_DIST}. Run \`npm install\` first.`
+    );
+    return;
   }
 
   const runtimeProblems = verifyRuntime(RUNTIME_DIR);
   const fileProblems = runtimeProblems.filter((p) => p.check === 'file-exists');
   if (fileProblems.length > 0) {
-    console.error('Runtime not prepared or incomplete. Run `npm run prepare:runtime` first.\nMissing:');
-    fileProblems.forEach((p) => console.error(`  ${path.join(RUNTIME_DIR, ...p.file.split('/'))}`));
-    process.exit(1);
+    const missing = fileProblems.map((problem) => `  ${path.join(RUNTIME_DIR, ...problem.file.split('/'))}`);
+    reportFailure(
+      'RUNTIME_INCOMPLETE',
+      `Runtime not prepared or incomplete. Run \`npm run prepare:runtime\` first.\nMissing:\n${missing.join('\n')}`
+    );
+    return;
   }
 
   const frontendProblems = runtimeProblems.filter((p) => p.check !== 'file-exists');
   if (frontendProblems.length > 0) {
-    console.error('Frontend runtime is incomplete. Re-run `npm run prepare:runtime -- --step frontend`.');
-    frontendProblems.forEach((p) => console.error(`  - ${p.message}`));
-    process.exit(1);
+    const details = frontendProblems.map((problem) => `  - ${problem.message}`).join('\n');
+    reportFailure(
+      'FRONTEND_RUNTIME_INCOMPLETE',
+      `Frontend runtime is incomplete. Re-run \`npm run prepare:runtime -- --step frontend\`.\n${details}`
+    );
+    return;
   }
 
   console.log(`Packaging app into ${appDir}`);

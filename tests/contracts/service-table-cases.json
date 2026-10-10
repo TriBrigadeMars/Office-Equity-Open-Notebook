@@ -1,0 +1,74 @@
+{
+  "description": "Language-neutral service table test vectors for Open Notebook wrapper contract compliance",
+  "validTables": [
+    {
+      "version": "1.0.0",
+      "defaultPorts": {
+        "surreal": 8000,
+        "api": 5055,
+        "frontend": 8502
+      },
+      "services": [
+        {
+          "name": "surrealdb",
+          "command": "surreal.exe",
+          "args": ["start", "--bind", "127.0.0.1:8000"],
+          "readinessPolicy": {
+            "type": "port",
+            "port": 8000,
+            "timeoutMs": 60000,
+            "label": "SurrealDB"
+          }
+        },
+        {
+          "name": "api",
+          "command": "python.exe",
+          "args": ["-m", "uvicorn", "api.main:app", "--port", "5055"],
+          "readinessPolicy": {
+            "type": "port",
+            "port": 5055,
+            "timeoutMs": 120000,
+            "label": "API"
+          }
+        },
+        {
+          "name": "worker",
+          "command": "python.exe",
+          "args": ["-m", "surreal_commands.cli.worker"],
+          "readinessPolicy": {
+            "type": "process"
+          }
+        },
+        {
+          "name": "frontend",
+          "command": "node.exe",
+          "args": ["server.js"],
+          "readinessPolicy": {
+            "type": "port",
+            "port": 8502,
+            "timeoutMs": 120000,
+            "label": "Frontend"
+          }
+        }
+      ]
+    }
+  ],
+  "invalidDefinitions": [
+    {
+      "input": null,
+      "expectedError": "ServiceDefinition must be an object"
+    },
+    {
+      "input": { "name": "", "command": "python", "args": [] },
+      "expectedError": "ServiceDefinition.name must be a non-empty string"
+    },
+    {
+      "input": { "name": "api", "command": "", "args": [] },
+      "expectedError": "ServiceDefinition.command must be a non-empty string"
+    },
+    {
+      "input": { "name": "api", "command": "python", "args": "invalid" },
+      "expectedError": "ServiceDefinition.args must be an array of strings"
+    }
+  ]
+}

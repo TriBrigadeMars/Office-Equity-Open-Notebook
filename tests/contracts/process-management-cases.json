@@ -1,0 +1,110 @@
+{
+  "defaultPorts": {
+    "surreal": 8000,
+    "api": 5055,
+    "frontend": 8502
+  },
+  "serviceNames": [
+    "surrealdb",
+    "api",
+    "worker",
+    "frontend"
+  ],
+  "shutdownSequence": {
+    "inputServices": ["surrealdb", "api", "worker", "frontend"],
+    "expectedShutdownOrder": ["frontend", "worker", "api", "surrealdb"]
+  },
+  "logFormattingCases": [
+    {
+      "description": "Standard stdout line",
+      "name": "api",
+      "stream": "out",
+      "data": "Uvicorn running on http://127.0.0.1:5055",
+      "expectedTag": "[api:out]",
+      "expectedContent": "Uvicorn running on http://127.0.0.1:5055\n"
+    },
+    {
+      "description": "Standard stderr line",
+      "name": "surrealdb",
+      "stream": "err",
+      "data": "Database storage engine initialized",
+      "expectedTag": "[surrealdb:err]",
+      "expectedContent": "Database storage engine initialized\n"
+    },
+    {
+      "description": "Empty whitespace data returns null",
+      "name": "worker",
+      "stream": "out",
+      "data": "   \n\n  ",
+      "expectedNull": true
+    }
+  ],
+  "exitEventCases": [
+    {
+      "description": "Intentional kill returns unexpected=false",
+      "serviceName": "frontend",
+      "exitCode": null,
+      "signal": "SIGTERM",
+      "killedIntentional": true,
+      "expectedUnexpected": false
+    },
+    {
+      "description": "Clean exit code 0 returns unexpected=false",
+      "serviceName": "api",
+      "exitCode": 0,
+      "signal": null,
+      "killedIntentional": false,
+      "expectedUnexpected": false
+    },
+    {
+      "description": "Unexpected crash code 1 returns unexpected=true",
+      "serviceName": "worker",
+      "exitCode": 1,
+      "signal": null,
+      "killedIntentional": false,
+      "expectedUnexpected": true
+    }
+  ],
+  "configValidationCases": {
+    "valid": [
+      {
+        "input": {
+          "runtimePath": "/path/to/runtime",
+          "dataDir": "/path/to/data",
+          "encryptionKey": "secret123",
+          "waitReady": true
+        },
+        "expectedRuntimePath": "/path/to/runtime",
+        "expectedDataDir": "/path/to/data",
+        "expectedEncryptionKey": "secret123"
+      }
+    ],
+    "invalid": [
+      {
+        "description": "Missing runtimePath",
+        "input": {
+          "dataDir": "/path/to/data",
+          "encryptionKey": "secret123"
+        },
+        "expectedErrorSubstring": "StartServicesConfig.runtimePath"
+      },
+      {
+        "description": "Missing dataDir",
+        "input": {
+          "runtimePath": "/path/to/runtime",
+          "encryptionKey": "secret123"
+        },
+        "expectedErrorSubstring": "StartServicesConfig.dataDir"
+      },
+      {
+        "description": "Empty encryptionKey",
+        "input": {
+          "runtimePath": "/path/to/runtime",
+          "dataDir": "/path/to/data",
+          "encryptionKey": ""
+        },
+        "expectedErrorSubstring": "StartServicesConfig.encryptionKey"
+      }
+    ]
+  }
+}

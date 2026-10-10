@@ -1,0 +1,100 @@
+{
+  "pythonCases": [
+    {
+      "description": "Bundled Python takes priority when present",
+      "runtimePath": "/app/runtime",
+      "existingFiles": ["/app/runtime/python/python.exe"],
+      "systemPath": "/usr/bin/python3",
+      "versionOutput": "Python 3.12.0",
+      "expectedSource": "bundled",
+      "expectedPath": "/app/runtime/python/python.exe"
+    },
+    {
+      "description": "Fallback to system Python 3.12 when bundled is absent",
+      "runtimePath": "/app/runtime",
+      "existingFiles": [],
+      "systemPath": "C:\\Python312\\python.exe",
+      "versionOutput": "Python 3.12.3",
+      "expectedSource": "system",
+      "expectedPath": "C:\\Python312\\python.exe",
+      "expectedInvalidVersion": null
+    },
+    {
+      "description": "Fallback to system Python 3.11 when bundled is absent",
+      "runtimePath": "/app/runtime",
+      "existingFiles": [],
+      "systemPath": "C:\\Python311\\python.exe",
+      "versionOutput": "Python 3.11.9",
+      "expectedSource": "system",
+      "expectedPath": "C:\\Python311\\python.exe",
+      "expectedInvalidVersion": null
+    },
+    {
+      "description": "Flag invalid version when system Python is 3.10",
+      "runtimePath": "/app/runtime",
+      "existingFiles": [],
+      "systemPath": "C:\\Python310\\python.exe",
+      "versionOutput": "Python 3.10.12",
+      "expectedSource": "system",
+      "expectedPath": "C:\\Python310\\python.exe",
+      "expectedInvalidVersion": "3.10"
+    },
+    {
+      "description": "Flag invalid version when system Python is 3.13",
+      "runtimePath": "/app/runtime",
+      "existingFiles": [],
+      "systemPath": "C:\\Python313\\python.exe",
+      "versionOutput": "Python 3.13.0",
+      "expectedSource": "system",
+      "expectedPath": "C:\\Python313\\python.exe",
+      "expectedInvalidVersion": "3.13"
+    },
+    {
+      "description": "Return null when no Python executable found anywhere",
+      "runtimePath": "/app/runtime",
+      "existingFiles": [],
+      "systemPath": null,
+      "versionOutput": null,
+      "expectedResultNull": true
+    }
+  ],
+  "nodeCases": [
+    {
+      "description": "Bundled Node takes priority when present",
+      "runtimePath": "/app/runtime",
+      "existingFiles": ["/app/runtime/node/node.exe"],
+      "systemPath": "/usr/bin/node",
+      "versionOutput": "v22.14.0",
+      "expectedSource": "bundled",
+      "expectedPath": "/app/runtime/node/node.exe"
+    },
+    {
+      "description": "Fallback to system Node v20 when bundled is absent",
+      "runtimePath": "/app/runtime",
+      "existingFiles": [],
+      "systemPath": "C:\\Program Files\\nodejs\\node.exe",
+      "versionOutput": "v20.10.0",
+      "expectedSource": "system",
+      "expectedPath": "C:\\Program Files\\nodejs\\node.exe",
+      "expectedInvalidVersion": null
+    },
+    {
+      "description": "Flag invalid version when system Node is v16",
+      "runtimePath": "/app/runtime",
+      "existingFiles": [],
+      "systemPath": "C:\\Program Files\\nodejs16\\node.exe",
+      "versionOutput": "v16.20.2",
+      "expectedSource": "system",
+      "expectedPath": "C:\\Program Files\\nodejs16\\node.exe",
+      "expectedInvalidVersion": 16
+    },
+    {
+      "description": "Return null when no Node executable found anywhere",
+      "runtimePath": "/app/runtime",
+      "existingFiles": [],
+      "systemPath": null,
+      "versionOutput": null,
+      "expectedResultNull": true
+    }
+  ]
+}

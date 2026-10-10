@@ -1,0 +1,47 @@
+{
+  "frontendUrl": "http://127.0.0.1:8502",
+  "cases": [
+    {
+      "description": "Exact match for frontend root URL",
+      "targetUrl": "http://127.0.0.1:8502",
+      "expectedAction": "allow",
+      "expectedReasonSubstring": "Internal navigation"
+    },
+    {
+      "description": "Internal route path within frontend",
+      "targetUrl": "http://127.0.0.1:8502/notebooks/123",
+      "expectedAction": "allow",
+      "expectedReasonSubstring": "Internal navigation"
+    },
+    {
+      "description": "External HTTP website",
+      "targetUrl": "http://example.com/docs",
+      "expectedAction": "external",
+      "expectedReasonSubstring": "External HTTP(S) link"
+    },
+    {
+      "description": "External HTTPS documentation website",
+      "targetUrl": "https://github.com/lfnovo/open-notebook",
+      "expectedAction": "external",
+      "expectedReasonSubstring": "External HTTP(S) link"
+    },
+    {
+      "description": "Local file protocol scheme denied",
+      "targetUrl": "file:///C:/Windows/System32/cmd.exe",
+      "expectedAction": "deny",
+      "expectedReasonSubstring": "Unsupported or untrusted protocol"
+    },
+    {
+      "description": "JavaScript URI scheme denied",
+      "targetUrl": "javascript:alert(1)",
+      "expectedAction": "deny",
+      "expectedReasonSubstring": "Unsupported or untrusted protocol"
+    },
+    {
+      "description": "Empty URL target denied",
+      "targetUrl": "",
+      "expectedAction": "deny",
+      "expectedReasonSubstring": "missing or non-string"
+    }
+  ]
+}

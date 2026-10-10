@@ -1,0 +1,186 @@
+{
+  "version": "1.0.0",
+  "pureCases": [
+    {
+      "id": "PURE-001",
+      "category": "service-table",
+      "input": {
+        "version": "1.0.0",
+        "defaultPorts": { "surreal": 8000, "api": 5055, "frontend": 8502 },
+        "services": [
+          { "name": "surrealdb", "command": "surreal", "args": ["start"] }
+        ]
+      },
+      "expectedValid": true
+    },
+    {
+      "id": "PURE-002",
+      "category": "service-table",
+      "input": {
+        "version": "1.0.0",
+        "defaultPorts": "invalid",
+        "services": []
+      },
+      "expectedValid": false
+    },
+    {
+      "id": "PURE-003",
+      "category": "runtime-manifest",
+      "input": {
+        "upstreamCommit": "a1b2c3d4e5f678901234567890abcdef12345678",
+        "version": "1.14.0"
+      },
+      "expectedValid": true
+    },
+    {
+      "id": "PURE-004",
+      "category": "runtime-manifest",
+      "input": {
+        "upstreamCommit": ""
+      },
+      "expectedValid": false
+    },
+    {
+      "id": "PURE-005",
+      "category": "window-policy",
+      "input": {
+        "targetUrl": "http://127.0.0.1:8502/dashboard",
+        "frontendUrl": "http://127.0.0.1:8502"
+      },
+      "expectedValid": true,
+      "expectedOutput": { "action": "allow" }
+    },
+    {
+      "id": "PURE-006",
+      "category": "window-policy",
+      "input": {
+        "targetUrl": "https://github.com/office-equity/open-notebook",
+        "frontendUrl": "http://127.0.0.1:8502"
+      },
+      "expectedValid": true,
+      "expectedOutput": { "action": "external" }
+    },
+    {
+      "id": "PURE-007",
+      "category": "window-policy",
+      "input": {
+        "targetUrl": "file:///C:/Windows/System32/cmd.exe",
+        "frontendUrl": "http://127.0.0.1:8502"
+      },
+      "expectedValid": true,
+      "expectedOutput": { "action": "deny" }
+    },
+    {
+      "id": "PURE-008",
+      "category": "process-manager-log",
+      "input": {
+        "name": "api",
+        "stream": "out",
+        "data": "Application started successfully",
+        "timestamp": "2026-03-05T10:00:00.000Z"
+      },
+      "expectedValid": true,
+      "expectedOutput": "2026-03-05T10:00:00.000Z [api:out] Application started successfully\n"
+    },
+    {
+      "id": "PURE-009",
+      "category": "process-manager-log",
+      "input": {
+        "name": "worker",
+        "stream": "err",
+        "data": "   \n\n  ",
+        "timestamp": "2026-03-05T10:00:00.000Z"
+      },
+      "expectedValid": true,
+      "expectedOutput": null
+    },
+    {
+      "id": "PURE-010",
+      "category": "process-manager-shutdown",
+      "input": ["surrealdb", "api", "worker", "frontend"],
+      "expectedValid": true,
+      "expectedOutput": ["frontend", "worker", "api", "surrealdb"]
+    }
+  ],
+  "supervisionScenarios": [
+    {
+      "id": "SUP-001",
+      "name": "Normal Startup Configuration",
+      "description": "Validates startup config with proper paths and encryption key",
+      "scenarioType": "startup",
+      "input": {
+        "config": {
+          "runtimePath": "C:\\Program Files\\Office Equity\\Notebook\\resources\\runtime",
+          "dataDir": "C:\\Users\\Test\\AppData\\Local\\OfficeEquity",
+          "encryptionKey": "secret-key-12345"
+        }
+      },
+      "expectedOutput": { "valid": true }
+    },
+    {
+      "id": "SUP-002",
+      "name": "Invalid Startup Configuration - Missing Runtime Path",
+      "description": "Fails fast when runtimePath is missing or empty",
+      "scenarioType": "startup",
+      "input": {
+        "config": {
+          "runtimePath": "",
+          "dataDir": "C:\\Users\\Test\\AppData\\Local\\OfficeEquity",
+          "encryptionKey": "secret-key-12345"
+        }
+      },
+      "expectedOutput": { "valid": false }
+    },
+    {
+      "id": "SUP-003",
+      "name": "Service Clean Exit Event",
+      "description": "Classifies exitCode 0 as expected exit when not killed",
+      "scenarioType": "service_exit",
+      "input": {
+        "serviceName": "api",
+        "exitCode": 0,
+        "signal": null,
+        "killedIntentional": false
+      },
+      "expectedOutput": { "unexpected": false }
+    },
+    {
+      "id": "SUP-004",
+      "name": "Service Unexpected Crash Exit Event",
+      "description": "Classifies exitCode 1 as unexpected crash when not killed",
+      "scenarioType": "service_exit",
+      "input": {
+        "serviceName": "worker",
+        "exitCode": 1,
+        "signal": null,
+        "killedIntentional": false
+      },
+      "expectedOutput": { "unexpected": true }
+    },
+    {
+      "id": "SUP-005",
+      "name": "Service Killed Intentionally Exit Event",
+      "description": "Classifies intentional process termination as expected exit even with signal or code",
+      "scenarioType": "service_exit",
+      "input": {
+        "serviceName": "surrealdb",
+        "exitCode": 15,
+        "signal": "SIGTERM",
+        "killedIntentional": true
+      },
+      "expectedOutput": { "unexpected": false }
+    },
+    {
+      "id": "SUP-006",
+      "name": "Shutdown Sequence Reversal",
+      "description": "Calculates reverse termination order (frontend -> worker -> api -> surrealdb)",
+      "scenarioType": "shutdown",
+      "input": {
+        "services": ["surrealdb", "api", "worker", "frontend"]
+      },
+      "expectedOutput": {
+        "sequence": ["frontend", "worker", "api", "surrealdb"]
+      }
+    }
+  ]
+}

@@ -119,6 +119,7 @@ export function createBackendEnvironment(params: {
   encryptionKey: string;
   tiktokenCache: string;
   apiPort?: number | undefined;
+  enableDocling?: boolean | string | undefined;
   existingEnv?: Record<string, string | undefined> | undefined;
 }): BackendEnvironment {
   const {
@@ -127,8 +128,14 @@ export function createBackendEnvironment(params: {
     encryptionKey,
     tiktokenCache,
     apiPort = DEFAULT_PORTS.api,
+    enableDocling = process.env['OPEN_NOTEBOOK_ENABLE_DOCLING'] ?? 'true',
     existingEnv = process.env,
   } = params;
+
+  const doclingValue =
+    typeof enableDocling === 'boolean'
+      ? (enableDocling ? 'true' : 'false')
+      : String(enableDocling);
 
   return {
     ...existingEnv,
@@ -142,7 +149,7 @@ export function createBackendEnvironment(params: {
     SURREAL_NAMESPACE: 'open_notebook',
     SURREAL_DATABASE: 'open_notebook',
     OPEN_NOTEBOOK_ENCRYPTION_KEY: encryptionKey,
-    OPEN_NOTEBOOK_ENABLE_DOCLING: 'true',
+    OPEN_NOTEBOOK_ENABLE_DOCLING: doclingValue,
     TIKTOKEN_CACHE_DIR: tiktokenCache,
     API_HOST: '127.0.0.1',
     API_PORT: String(apiPort),

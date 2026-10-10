@@ -387,11 +387,47 @@ async function main() {
   const args = process.argv.slice(2);
   const repo = readFlag(args, '--repo', DEFAULT_REPO);
   const step = readFlag(args, '--step', 'all');
+  const overrideUpstreamCheck = args.includes('--override-upstream-check');
 
   if (!fs.existsSync(path.join(repo, 'pyproject.toml'))) {
     console.error(`Repository not found at ${repo}. Pass --repo=<path> or clone lfnovo/open-notebook.`);
     process.exit(1);
   }
+
+  const lockFilePath = path.join(PROJECT_DIR, 'upstream.lock.json');
+  let lockData = null;
+  if (fs.existsSync(lockFilePath)) {
+    lockData = JSON.parse(fs.readFileSync(lockFilePath, 'utf8'));
+  } else {
+    console.warn(`Warning: upstream.lock.json not found.`);
+  }
+
+  let upstreamCommit = 'unknown';
+  try {
+    upstreamCommit = runCapture('git', ['rev-parse', 'HEAD'], { cwd: repo });
+    if (lockData && lockData.commit) {
+      if (upstreamCommit !== lockData.commit) {
+        if (overrideUpstreamCheck) {
+          console.warn(`\n⚠️  Upstream commit mismatch overridden! Expected ${lockData.commit}, got ${upstreamCommit}.`);
+        } else {
+          console.error(`\n❌ Upstream commit mismatch! Expected ${lockData.commit}, got ${upstreamCommit}.`);
+          console.error(`Pass --override-upstream-check to bypass this error.`);
+          process.exit(1);
+        }
+      } else {
+        console.log(`Verified upstream commit: ${upstreamCommit}`);
+      }
+    }
+  } catch (e) {
+    if (!overrideUpstreamCheck) {
+      console.error(`\n❌ Failed to determine upstream commit: ${e.message}`);
+      console.error(`Pass --override-upstream-check to bypass this error.`);
+      process.exit(1);
+    } else {
+      console.warn(`\n⚠️  Failed to determine upstream commit, overridden! (${e.message})`);
+    }
+  }
+
   console.log(`Using repository: ${repo}`);
   console.log(`Runtime output:  ${RUNTIME_DIR}`);
 
@@ -415,6 +451,25 @@ async function main() {
     }
     await steps[step]();
   }
+
+  let wrapperCommit = 'unknown';
+  try {
+    wrapperCommit = runCapture('git', ['rev-parse', 'HEAD'], { cwd: PROJECT_DIR });
+  } catch (e) {}
+
+  const manifest = {
+    wrapperCommit,
+    upstreamCommit,
+    buildTimestamp: new Date().toISOString(),
+    targetArchitecture: os.arch(),
+    toolchains: {
+      surreal: SURREAL_VERSION,
+      node: NODE_VERSION,
+      python: '3.12',
+    }
+  };
+
+  fs.writeFileSync(path.join(RUNTIME_DIR, 'manifest.json'), JSON.stringify(manifest, null, 2));
 
   console.log('\n✅ Runtime prepared successfully.');
   console.log('You can now run the app with `npm start`, package it with `npm run package:app`, or build the installer with `npm run installer`.');

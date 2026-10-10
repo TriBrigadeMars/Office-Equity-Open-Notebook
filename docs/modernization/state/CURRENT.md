@@ -1,7 +1,7 @@
 # Modernization State
 
 ## Current Packet
-`L1.3` (Ready to begin)
+`L1.6` (Ready to begin — Prompt 14)
 
 ## Completed Packets
 - `L0.1`: Pin upstream revision and build provenance. (Completed)
@@ -14,6 +14,7 @@
 - `L0.6`: Implement safe interactive port-conflict recovery. (Completed)
 - `L1.1`: Produce dependency and packaged-size inventory. (Completed)
 - `L1.2`: Build and validate a no-Docling core runtime. (Completed)
+- `L1.5`: Benchmark Python worker concurrency settings. (Completed)
 
 ## Current Status
 - Strict TypeScript tooling configured (`tsconfig.json`, `npm run typecheck`, `npm run build:types`).
@@ -24,5 +25,5 @@
 - Port-conflict recovery contract and interactive fail-closed validation operational under `src/contracts/port-conflict.ts`.
 - Dependency and packaged-size inventory generated at `.artifacts/reports/l1_1/size_and_dependency_inventory.json`.
 - No-Docling core runtime configuration and fallback validated under `scripts/tests/test-no-docling-runtime.js`.
-- Packets 8 (L0.6), 9 (L1.1), and 10 (L1.2) successfully completed.
-- Ready to proceed to `L1.3`: Prototype demand-loaded or isolated Docling worker.
+- Worker concurrency benchmark matrix generated at `.artifacts/reports/l1_5/worker_concurrency_benchmark.json` and validated by `scripts/tests/test-worker-concurrency.js`. Recommended default: 2 tasks.
+- Prompt 13 (`L1.5`) completed. Ready to proceed to `L1.6`: Prototype an on-demand Python worker lifecycle (Prompt 14).

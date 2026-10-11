@@ -1,7 +1,7 @@
 # Modernization State
 
 ## Current Packet
-`L1.6` (Ready to begin — Prompt 14)
+`L2.2` (Ready to begin)
 
 ## Completed Packets
 - `L0.1`: Pin upstream revision and build provenance. (Completed)
@@ -15,6 +15,7 @@
 - `L1.1`: Produce dependency and packaged-size inventory. (Completed)
 - `L1.2`: Build and validate a no-Docling core runtime. (Completed)
 - `L1.5`: Benchmark Python worker concurrency settings. (Completed)
+- `L2.1`: Freeze the native-host contract. (Completed)
 
 ## Current Status
 - Strict TypeScript tooling configured (`tsconfig.json`, `npm run typecheck`, `npm run build:types`).
@@ -26,4 +27,4 @@
 - Dependency and packaged-size inventory generated at `.artifacts/reports/l1_1/size_and_dependency_inventory.json`.
 - No-Docling core runtime configuration and fallback validated under `scripts/tests/test-no-docling-runtime.js`.
 - Worker concurrency benchmark matrix generated at `.artifacts/reports/l1_5/worker_concurrency_benchmark.json` and validated by `scripts/tests/test-worker-concurrency.js`. Recommended default: 2 tasks.
-- Prompt 13 (`L1.5`) completed. Ready to proceed to `L1.6`: Prototype an on-demand Python worker lifecycle (Prompt 14).
+- Prompt 15 (`L2.1`) completed. Native-host contract, schema, and compliance checklist defined under `docs/modernization/contracts/`. Ready to proceed to `L2.2`.

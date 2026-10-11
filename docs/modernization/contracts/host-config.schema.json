@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HostConfig v1",
+  "description": "Stable host configuration schema version 1 for Native Hosts",
+  "type": "object",
+  "required": [
+    "version",
+    "paths",
+    "ports",
+    "services",
+    "environment"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "frontend": {
+      "type": "object",
+      "properties": {
+        "url": { "type": "string", "format": "uri" },
+        "devMode": { "type": "boolean", "default": false }
+      }
+    },
+    "ports": {
+      "type": "object",
+      "properties": {
+        "surreal": { "type": "integer" },
+        "api": { "type": "integer" },
+        "frontend": { "type": "integer" }
+      },
+      "required": ["surreal", "api", "frontend"]
+    },
+    "paths": {
+      "type": "object",
+      "properties": {
+        "runtimePath": { "type": "string", "description": "Absolute path to the packaged runtime directory." },
+        "dataDir": { "type": "string", "description": "Absolute path to the application data directory." },
+        "logDir": { "type": "string", "description": "Absolute path to the application log directory." }
+      },
+      "required": ["runtimePath", "dataDir", "logDir"]
+    },
+    "services": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "command": { "type": "string" },
+          "args": { "type": "array", "items": { "type": "string" } },
+          "readinessProbe": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "enum": ["tcp", "http", "process"] },
+              "port": { "type": "integer" },
+              "path": { "type": "string" },
+              "timeoutMs": { "type": "integer" }
+            },
+            "required": ["type"]
+          }
+        },
+        "required": ["name", "command"]
+      }
+    },
+    "timeouts": {
+      "type": "object",
+      "properties": {
+        "startupMs": { "type": "integer", "default": 30000 },
+        "shutdownMs": { "type": "integer", "default": 5000 }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "properties": {
+        "encryptionKey": { "type": "string", "description": "Secret key used for secure storage. Must not be leaked." }
+      },
+      "required": ["encryptionKey"]
+    },
+    "optionalFeatures": {
+      "type": "object",
+      "additionalProperties": { "type": "boolean" }
+    },
+    "logging": {
+      "type": "object",
+      "properties": {
+        "level": { "type": "string", "enum": ["debug", "info", "warn", "error"] },
+        "format": { "type": "string", "enum": ["text", "json"] }
+      }
+    },
+    "portConflictPolicy": {
+      "type": "string",
+      "enum": ["terminate_owned", "interactive_prompt", "abort"],
+      "default": "interactive_prompt"
+    }
+  }
+}

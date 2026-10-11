@@ -1,7 +1,7 @@
 # Modernization State
 
 ## Current Packet
-`L2.2` (Ready to begin)
+`L2.2` (Ready to begin — Prompt 16)
 
 ## Completed Packets
 - `L0.1`: Pin upstream revision and build provenance. (Completed)
@@ -16,6 +16,7 @@
 - `L1.2`: Build and validate a no-Docling core runtime. (Completed)
 - `L1.5`: Benchmark Python worker concurrency settings. (Completed)
 - `L2.1`: Freeze the native-host contract. (Completed)
+- `L2.2`: Build the minimal Rust/Tauri host candidate. (Completed)
 
 ## Current Status
 - Strict TypeScript tooling configured (`tsconfig.json`, `npm run typecheck`, `npm run build:types`).
@@ -27,4 +28,5 @@
 - Dependency and packaged-size inventory generated at `.artifacts/reports/l1_1/size_and_dependency_inventory.json`.
 - No-Docling core runtime configuration and fallback validated under `scripts/tests/test-no-docling-runtime.js`.
 - Worker concurrency benchmark matrix generated at `.artifacts/reports/l1_5/worker_concurrency_benchmark.json` and validated by `scripts/tests/test-worker-concurrency.js`. Recommended default: 2 tasks.
-- Prompt 15 (`L2.1`) completed. Native-host contract, schema, and compliance checklist defined under `docs/modernization/contracts/`. Ready to proceed to `L2.2`.
+- Prompt 15 (`L2.1`) completed. Native-host contract, schema, and compliance checklist defined under `docs/modernization/contracts/`.
+- Prompt 16 (`L2.2`) completed. Minimal Rust/Tauri host candidate scaffolded under `src-tauri`. Ready to proceed to `L2.3`.

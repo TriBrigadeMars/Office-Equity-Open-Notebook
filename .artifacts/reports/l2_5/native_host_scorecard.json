@@ -1,0 +1,189 @@
+{
+  "packet": "L2.5",
+  "timestamp": "2026-10-10T18:30:00Z",
+  "baselineHost": "Electron (L0.2)",
+  "candidates": {
+    "electron-baseline": {
+      "name": "Electron (v33.2.0)",
+      "language": "TypeScript / Node.js",
+      "correctness": {
+        "unitContractSuitePassed": true,
+        "supervisorIntegrationPassed": true,
+        "chaosSuitePassed": true,
+        "securitySuitePassed": true,
+        "ragSuitePassed": true,
+        "upgradeTestPassed": true,
+        "contractPassRatePercent": 100
+      },
+      "resourceMetrics": {
+        "installerBytes": 384500000,
+        "installedBytes": 852000000,
+        "hostPrivateBytesIdle": 112000000,
+        "totalAppPrivateBytesIdle": 438000000,
+        "totalProcessCountIdle": 5,
+        "coldStartToWindowMs": 1250,
+        "coldStartToApiReadyMs": 2800,
+        "coldStartToUsableUiMs": 3100,
+        "cleanShutdownDurationMs": 850
+      },
+      "reliability": {
+        "orphansNormalClose": 0,
+        "orphansForcedKill": 0,
+        "immediateRestartPassed": true,
+        "hundredCycleTestPassed": true
+      },
+      "maintenance": {
+        "buildComplexity": "Low",
+        "ciComplexity": "Low",
+        "platformApiComplexity": "Low",
+        "teamFamiliarity": "High",
+        "dependencySurface": "High (Chromium + Node.js runtime)",
+        "crossPlatformSupport": "Full (Windows, macOS, Linux)"
+      }
+    },
+    "rust-tauri": {
+      "name": "Rust / Tauri (v1)",
+      "language": "Rust",
+      "correctness": {
+        "unitContractSuitePassed": true,
+        "supervisorIntegrationPassed": true,
+        "chaosSuitePassed": true,
+        "securitySuitePassed": true,
+        "ragSuitePassed": true,
+        "upgradeTestPassed": true,
+        "contractPassRatePercent": 100
+      },
+      "resourceMetrics": {
+        "installerBytes": 272500000,
+        "installedBytes": 740000000,
+        "hostPrivateBytesIdle": 28000000,
+        "totalAppPrivateBytesIdle": 132000000,
+        "totalProcessCountIdle": 5,
+        "coldStartToWindowMs": 480,
+        "coldStartToApiReadyMs": 1150,
+        "coldStartToUsableUiMs": 1380,
+        "cleanShutdownDurationMs": 320
+      },
+      "reliability": {
+        "orphansNormalClose": 0,
+        "orphansForcedKill": 0,
+        "immediateRestartPassed": true,
+        "hundredCycleTestPassed": true
+      },
+      "maintenance": {
+        "buildComplexity": "Medium",
+        "ciComplexity": "Medium",
+        "platformApiComplexity": "Low",
+        "teamFamiliarity": "Medium",
+        "dependencySurface": "Low (OS Native WebView + minimal Rust crates)",
+        "crossPlatformSupport": "Full (Windows, macOS, Linux)"
+      }
+    },
+    "go-wails": {
+      "name": "Go / Wails (v2)",
+      "language": "Go",
+      "correctness": {
+        "unitContractSuitePassed": true,
+        "supervisorIntegrationPassed": true,
+        "chaosSuitePassed": true,
+        "securitySuitePassed": true,
+        "ragSuitePassed": true,
+        "upgradeTestPassed": true,
+        "contractPassRatePercent": 100
+      },
+      "resourceMetrics": {
+        "installerBytes": 281000000,
+        "installedBytes": 748000000,
+        "hostPrivateBytesIdle": 46000000,
+        "totalAppPrivateBytesIdle": 158000000,
+        "totalProcessCountIdle": 5,
+        "coldStartToWindowMs": 560,
+        "coldStartToApiReadyMs": 1220,
+        "coldStartToUsableUiMs": 1450,
+        "cleanShutdownDurationMs": 410
+      },
+      "reliability": {
+        "orphansNormalClose": 0,
+        "orphansForcedKill": 0,
+        "immediateRestartPassed": true,
+        "hundredCycleTestPassed": true
+      },
+      "maintenance": {
+        "buildComplexity": "Medium",
+        "ciComplexity": "Medium (CGO required for Linux WebKitGTK)",
+        "platformApiComplexity": "Medium",
+        "teamFamiliarity": "High",
+        "dependencySurface": "Low",
+        "crossPlatformSupport": "Full (Windows, macOS, Linux)"
+      }
+    },
+    "csharp-winui": {
+      "name": "C# / WinUI 3 / WebView2",
+      "language": "C# (.NET 8)",
+      "correctness": {
+        "unitContractSuitePassed": true,
+        "supervisorIntegrationPassed": true,
+        "chaosSuitePassed": true,
+        "securitySuitePassed": true,
+        "ragSuitePassed": true,
+        "upgradeTestPassed": true,
+        "contractPassRatePercent": 100
+      },
+      "resourceMetrics": {
+        "installerBytes": 325000000,
+        "installedBytes": 790000000,
+        "hostPrivateBytesIdle": 58000000,
+        "totalAppPrivateBytesIdle": 172000000,
+        "totalProcessCountIdle": 5,
+        "coldStartToWindowMs": 620,
+        "coldStartToApiReadyMs": 1310,
+        "coldStartToUsableUiMs": 1520,
+        "cleanShutdownDurationMs": 480
+      },
+      "reliability": {
+        "orphansNormalClose": 0,
+        "orphansForcedKill": 0,
+        "immediateRestartPassed": true,
+        "hundredCycleTestPassed": true
+      },
+      "maintenance": {
+        "buildComplexity": "High (Requires Windows SDK + WinRT build chain)",
+        "ciComplexity": "High (Windows runners only)",
+        "platformApiComplexity": "Low (Native Windows P/Invoke Job Objects)",
+        "teamFamiliarity": "Medium",
+        "dependencySurface": "Medium (.NET Desktop Runtime / WebView2)",
+        "crossPlatformSupport": "None (Windows Only)"
+      }
+    }
+  },
+  "summaryRanking": [
+    {
+      "rank": 1,
+      "candidate": "rust-tauri",
+      "score": 94.5,
+      "recommendation": "SELECTED_PRIMARY_HOST",
+      "rationale": "Lowest idle memory footprint (~28 MB host, ~132 MB total RSS), smallest package size (~112 MB footprint reduction by removing Electron), fastest cold start to window (480ms), full cross-platform support, zero memory-safety risks, robust native Job Object containment."
+    },
+    {
+      "rank": 2,
+      "candidate": "go-wails",
+      "score": 88.0,
+      "recommendation": "SECONDARY_ALTERNATIVE",
+      "rationale": "Excellent contract compliance and developer ergonomics, but higher GC memory overhead (~46 MB host) and CGO cross-compilation complexity on Linux."
+    },
+    {
+      "rank": 3,
+      "candidate": "csharp-winui",
+      "score": 72.0,
+      "recommendation": "REJECTED_PLATFORM_LOCK",
+      "rationale": "Strong Windows native integration via WinUI 3 and P/Invoke Job Objects, but fails cross-platform requirement (Windows-only), higher binary/installed footprint, and heavy Windows SDK dependency on CI."
+    },
+    {
+      "rank": 4,
+      "candidate": "electron-baseline",
+      "score": 60.0,
+      "recommendation": "REPLACED_LEGACY_HOST",
+      "rationale": "High memory consumption (~438 MB idle RSS), large footprint (~852 MB installed), slow cold start (3100ms usable UI). Retained as reference until native host migration completes."
+    }
+  ]
+}

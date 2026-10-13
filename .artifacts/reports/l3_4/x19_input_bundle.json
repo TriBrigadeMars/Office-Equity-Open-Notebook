@@ -1,0 +1,128 @@
+{
+  "bundleVersion": "1.0.0",
+  "packetId": "L3.4",
+  "executionClass": "GEMINI — Gemini 3.6 Flash / 1M tokens",
+  "targetGate": "X19",
+  "generatedAt": "2026-10-10T22:30:00Z",
+  "repositoryState": {
+    "gitCommit": "43175bd8e0ff796351c21bf2985cf0543c63c963",
+    "gitBranch": "main",
+    "status": "clean_baseline_with_untracked_reports_and_contracts",
+    "verificationPassed": true
+  },
+  "nextServerInventory": {
+    "reportPath": ".artifacts/reports/l3_1/next_server_inventory.json",
+    "handoffPath": "docs/modernization/handoffs/L3.1.md",
+    "totalUiRoutes": 7,
+    "uiRoutes": [
+      "/",
+      "/notebooks/[id]",
+      "/notes/[id]",
+      "/sources/[id]",
+      "/settings",
+      "/models",
+      "/podcasts"
+    ],
+    "serverOnlyFeatures": {
+      "serverComponents": 0,
+      "serverActions": 0,
+      "middleware": false,
+      "routeHandlers": 0
+    },
+    "proxiedApiEndpoints": [
+      "/api/notebooks/*",
+      "/api/notes/*",
+      "/api/sources/*",
+      "/api/sources/upload",
+      "/api/sources/process",
+      "/api/chat/stream",
+      "/api/models/*",
+      "/api/podcasts/*",
+      "/api/health"
+    ],
+    "backendTarget": "http://127.0.0.1:5055"
+  },
+  "staticClientPoc": {
+    "reportPath": ".artifacts/reports/l3_3/static_client_poc.json",
+    "handoffPath": "docs/modernization/handoffs/L3.3.md",
+    "buildScript": "scripts/build-static-client.js",
+    "outputDirectory": ".artifacts/static-client-poc/",
+    "entryPoint": ".artifacts/static-client-poc/index.html",
+    "envConfig": ".artifacts/static-client-poc/env-config.js",
+    "spaFallbackRulesPath": ".artifacts/static-client-poc/spa-fallback.json",
+    "blockers": [
+      {
+        "id": "BLOCKER_001_NO_NODE_REVERSE_PROXY",
+        "description": "Static export lacks Node.js reverse proxy for /api/*. Delegates proxying to native host loopback proxy.",
+        "resolution": "Implement loopback proxy in Rust/Tauri host in Section 19."
+      },
+      {
+        "id": "BLOCKER_002_SPA_DEEP_ROUTE_FALLBACK",
+        "description": "Direct refresh on dynamic routes (/notebooks/123) requires static server SPA fallback.",
+        "resolution": "Configure native host embedded web server with try_files $uri /index.html."
+      },
+      {
+        "id": "BLOCKER_003_SERVER_ENV_ELIMINATION",
+        "description": "Server-only process.env dependencies replaced with client-safe window.__CONFIG__ or NEXT_PUBLIC_API_URL.",
+        "resolution": "Inject window.__CONFIG__ at startup in index.html shell."
+      }
+    ]
+  },
+  "apiAndSseCompatibilityFixtures": {
+    "fixturePath": "tests/contracts/api-proxy-cases.json",
+    "reportPath": ".artifacts/reports/l3_2/api_proxy_fixtures.json",
+    "handoffPath": "docs/modernization/handoffs/L3.2.md",
+    "contractModule": "src/contracts/api-proxy.ts",
+    "testRunner": "scripts/tests/test-api-proxy-compatibility.js",
+    "fixtureCounts": {
+      "proxyCases": 5,
+      "uploadCases": 3,
+      "sseCases": 3
+    },
+    "keyRequirements": {
+      "unbufferedSse": true,
+      "maxFrameLatencyMs": 100,
+      "disallowCoalescedChunks": true,
+      "headers": {
+        "contentType": "text/event-stream",
+        "cacheControl": "no-cache",
+        "xAccelBuffering": "no"
+      },
+      "uploadMaxSizeMb": 50
+    }
+  },
+  "selectedHostContractAndSecurity": {
+    "selectedHost": "Rust / Tauri (src-tauri)",
+    "adrPath": "docs/modernization/adr/001-native-host-selection.md",
+    "contractPath": "docs/modernization/contracts/host-contract.md",
+    "schemaPath": "docs/modernization/contracts/host-config.schema.json",
+    "checklistPath": "docs/modernization/contracts/candidate-compliance-checklist.md",
+    "scorecardPath": ".artifacts/reports/l2_5/native_host_scorecard.json",
+    "securityConstraints": {
+      "loopbackRestriction": "127.0.0.1 binding only for internal services",
+      "originIsolation": "WebView navigation restricted to app origin (http://127.0.0.1:8502 or tauri://localhost)",
+      "externalLinks": "All non-app URLs delegated to OS system browser",
+      "prohibitedSchemes": [
+        "file://"
+      ],
+      "processContainment": "Windows Job Objects (JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE) + Unix setsid process groups",
+      "portConflictPolicy": "Fail-closed; terminate app-owned processes only with interactive user consent"
+    }
+  },
+  "performanceAndRollbackBaseline": {
+    "workerConcurrency": {
+      "recommendedWorkers": 2,
+      "reportPath": ".artifacts/reports/l1_5/worker_concurrency_benchmark.json"
+    },
+    "memoryBaseline": {
+      "electronBaselineRssMb": 438,
+      "tauriTargetRssMb": 132,
+      "memoryReductionPct": 69.8
+    },
+    "rollbackInstructions": {
+      "strategy": "Dual-host fallback available during Section 19/20 transition",
+      "fallbackServerCommand": "node server.js",
+      "fallbackElectronCommand": "npm run start:electron"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "packet": "X20",
+  "title": "Remove Bundled Node.js & Next Standalone Server",
+  "status": "completed",
+  "timestamp": "2026-03-05T00:00:00.000Z",
+  "host": "reference-ts-and-src-tauri",
+  "nodeRuntimeEliminated": true,
+  "nodeRuntimeBytes": 0,
+  "nodeRuntimeDiskSavingsMB": 56.0,
+  "serviceTable": {
+    "version": "1.0.0",
+    "servicesCount": 3,
+    "services": ["surrealdb", "api", "worker"],
+    "frontendServiceOwnedBy": "native_host_embedded_static_and_proxy_server"
+  },
+  "runtimeManifest": {
+    "requiredPaths": [
+      "surreal/surreal.exe",
+      "backend/open_notebook",
+      "frontend/static"
+    ],
+    "nodeBundled": false
+  },
+  "cleanMachineValidation": {
+    "systemNodeRequired": false,
+    "bundledNodeRequired": false,
+    "standaloneNextServerRequired": false,
+    "status": "passed"
+  },
+  "verification": {
+    "typecheck": "passed",
+    "testSuitesPassed": 13,
+    "totalTestSuites": 13
+  }
+}

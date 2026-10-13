@@ -1,0 +1,91 @@
+{
+  "timestamp": "2026-10-10T22:17:29.641Z",
+  "environment": {
+    "node": "v26.10.0",
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "directories": {
+    "node_modules_bytes": 305254813,
+    "src_bytes": 48767,
+    "scripts_bytes": 78328,
+    "docs_bytes": 28081,
+    "resources_bytes": 352,
+    "tests_bytes": 16663
+  },
+  "node_dependencies": {
+    "production": [],
+    "development": [
+      {
+        "name": "electron",
+        "sizeBytes": 278052258,
+        "purpose": "Desktop host shell"
+      },
+      {
+        "name": "typescript",
+        "sizeBytes": 22742077,
+        "purpose": "Strict type compilation"
+      },
+      {
+        "name": "@types/node",
+        "sizeBytes": 2290750,
+        "purpose": "Type declarations"
+      }
+    ]
+  },
+  "packaged_runtime_breakdown": {
+    "surrealdb": {
+      "estimatedBytes": 85000000,
+      "category": "required",
+      "status": "external binary"
+    },
+    "python_runtime_base": {
+      "estimatedBytes": 45000000,
+      "category": "required",
+      "status": "bundled embeddable"
+    },
+    "python_core_site_packages": {
+      "estimatedBytes": 160000000,
+      "category": "required",
+      "status": "fastapi, uvicorn, surrealdb, pydantic"
+    },
+    "docling_ml_stack": {
+      "estimatedBytes": 820000000,
+      "category": "candidate_for_removal",
+      "status": "heavy ML/OCR stack (torch, docling)"
+    },
+    "frontend_next_server": {
+      "estimatedBytes": 95000000,
+      "category": "candidate_for_migration",
+      "status": "standalone Next server"
+    },
+    "electron_shell": {
+      "estimatedBytes": 278000000,
+      "category": "candidate_for_migration",
+      "status": "Chromium + Node desktop shell"
+    }
+  },
+  "allowlist_manifest": [
+    "resources/runtime/backend/api/*",
+    "resources/runtime/backend/surreal_commands/*",
+    "resources/runtime/backend/open_notebook/*",
+    "resources/runtime/surreal/surreal.exe"
+  ],
+  "candidate_removal_list": [
+    {
+      "component": "docling",
+      "reason": "Consumes ~820MB disk and ~1.2GB peak RAM; not required for core notes/search",
+      "evidence": "Master plan 10 / Workstream 5"
+    },
+    {
+      "component": "bundled_electron",
+      "reason": "Consumes ~278MB; candidate for replacement by native lightweight host (Tauri/Wails)",
+      "evidence": "Master plan 15 / Workstream 11"
+    },
+    {
+      "component": "bundled_node_server",
+      "reason": "Consumes ~95MB; frontend can be served statically or via native host",
+      "evidence": "Master plan 20 / Workstream 16"
+    }
+  ]
+}

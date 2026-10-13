@@ -1,0 +1,191 @@
+{
+  "generatedAt": "2026-10-11T07:30:12.598Z",
+  "totalArtifacts": 37,
+  "artifacts": [
+    {
+      "file": "docs/modernization/handoffs/L0.1.md",
+      "sizeBytes": 1442,
+      "sha256": "0c472359c8c4910460011f4e20317757ec18ad9f7be63f69cbf3ffddd59bab7c"
+    },
+    {
+      "file": "docs/modernization/handoffs/L0.2.md",
+      "sizeBytes": 1302,
+      "sha256": "70dc41ad965dc7889b991fff387c22d0267886e62d37488d669f14a2f31815d8"
+    },
+    {
+      "file": "docs/modernization/handoffs/L0.3a.md",
+      "sizeBytes": 1934,
+      "sha256": "f61b5020a26c9c8b978c00237abc9b1bf837ed571811245df3a4d3c2102c9ece"
+    },
+    {
+      "file": "docs/modernization/handoffs/L0.3b.md",
+      "sizeBytes": 1812,
+      "sha256": "bd0ad092b8f842f3dadb50acbb8cafd76eb6b68e56db8b71fee3c3aa4a4b2b3d"
+    },
+    {
+      "file": "docs/modernization/handoffs/L0.3c.md",
+      "sizeBytes": 2029,
+      "sha256": "e606470057c94caddd23f2ee58948b9ffa80cad8830c7d71d4b8a542a3a096c6"
+    },
+    {
+      "file": "docs/modernization/handoffs/L0.4.md",
+      "sizeBytes": 1478,
+      "sha256": "00e1f5c10cf8508f470f1820088f49f599e678d6368e0298c14e3c723361bfa3"
+    },
+    {
+      "file": "docs/modernization/handoffs/L0.5.md",
+      "sizeBytes": 1880,
+      "sha256": "ffd5edddf244ca15e6237c628f994f4c9c05207a2a5400806866c0c360c663d2"
+    },
+    {
+      "file": "docs/modernization/handoffs/L0.6.md",
+      "sizeBytes": 1952,
+      "sha256": "17fed275a2b7a91b36ee6cad3cde44f5ca0f2b9dd699283584bff30f8afe67e6"
+    },
+    {
+      "file": "docs/modernization/handoffs/L1.1.md",
+      "sizeBytes": 1196,
+      "sha256": "4df44302fa1ba1b6c13f5c508d1126523e147ca22c0b91ca2bbf0408edf55cdd"
+    },
+    {
+      "file": "docs/modernization/handoffs/L1.2.md",
+      "sizeBytes": 1309,
+      "sha256": "1c3ca4a0376b613fab7cafe6a8d5f6d9e8ff556eb701a358b635adc0b924672b"
+    },
+    {
+      "file": "docs/modernization/handoffs/L1.5.md",
+      "sizeBytes": 1475,
+      "sha256": "febaf509aea0ad59f025175393f3597b39f272bb170b7536fcc51b620b57655b"
+    },
+    {
+      "file": "docs/modernization/handoffs/L2.1.md",
+      "sizeBytes": 1882,
+      "sha256": "dbd25bfa41332d1028ef78fac8f299f807924f16cf2626470481157c10301446"
+    },
+    {
+      "file": "docs/modernization/handoffs/L2.2.md",
+      "sizeBytes": 2136,
+      "sha256": "f0a65c7792e5e110f4388e2a9e6020581d7108c77307acdf2331c410fc1bc476"
+    },
+    {
+      "file": "docs/modernization/handoffs/L2.3.md",
+      "sizeBytes": 2876,
+      "sha256": "a9fcfafb394d6e728cf503a032524059e5e0c968e615d0df6fef77762541ebdf"
+    },
+    {
+      "file": "docs/modernization/handoffs/L2.4.md",
+      "sizeBytes": 3393,
+      "sha256": "c373c9b931f0dec88bc19c8060443bb7ff85ee39eb2e094acb1be932b93e4b71"
+    },
+    {
+      "file": "docs/modernization/handoffs/L2.5.md",
+      "sizeBytes": 3086,
+      "sha256": "265dc89fa860916d1dc39a40a13c0b509d0ba19c836d0c469593ab72adc34cfd"
+    },
+    {
+      "file": "docs/modernization/handoffs/L3.1.md",
+      "sizeBytes": 6094,
+      "sha256": "b998716f45d5b8d979706c1d9d01fede39dcbff410b6bb184c1bb0f6ee6cc018"
+    },
+    {
+      "file": "docs/modernization/handoffs/L3.2.md",
+      "sizeBytes": 4897,
+      "sha256": "1e3805d50e308c228d38814d1957241b9a5655666e10639c9f4f1a65a8f6db78"
+    },
+    {
+      "file": "docs/modernization/handoffs/L3.3.md",
+      "sizeBytes": 5140,
+      "sha256": "65adb4ef24550647433c248a45dd248141255cfbe95800c8961417ac8a330e91"
+    },
+    {
+      "file": "docs/modernization/handoffs/L3.4.md",
+      "sizeBytes": 7576,
+      "sha256": "31766187ef1a38ecc29eeeb4fd381be80c3fdb06f2457c073f54179f5f262d3c"
+    },
+    {
+      "file": ".artifacts/reports/l1_1/size_and_dependency_inventory.json",
+      "sizeBytes": 2543,
+      "sha256": "8a0672a86227d8d40f810d7aa0ebe7235b8dfacfb09144f539368f2e5631ac61"
+    },
+    {
+      "file": ".artifacts/reports/l1_5/worker_concurrency_benchmark.json",
+      "sizeBytes": 1993,
+      "sha256": "a841dd0f9ec9a1f2931f64fff046e147304afc66881b680ab55f55c22db43d35"
+    },
+    {
+      "file": ".artifacts/reports/l2_5/native_host_scorecard.json",
+      "sizeBytes": 6726,
+      "sha256": "dd1b039f08e7c564b94f1d155ad7306abd61ebdf20964369fad54697ded910f1"
+    },
+    {
+      "file": ".artifacts/reports/l3_1/next_server_inventory.json",
+      "sizeBytes": 9528,
+      "sha256": "dc7418b0d80c2a3d3eaa8ced9f177dee44b9bc22232b566dd2c789ca6840cfcd"
+    },
+    {
+      "file": ".artifacts/reports/l3_2/api_proxy_fixtures.json",
+      "sizeBytes": 6690,
+      "sha256": "732140877dedc7c51b959568a38109e40c281bb610fd1186f9d56c023cfa0513"
+    },
+    {
+      "file": ".artifacts/reports/l3_3/static_client_poc.json",
+      "sizeBytes": 2401,
+      "sha256": "02b4a12b4b21c35f86b58efbae508a31e4d76c6a809b183ebc4e4b2a1b8ceb3f"
+    },
+    {
+      "file": ".artifacts/reports/l3_4/x19_input_bundle.json",
+      "sizeBytes": 4858,
+      "sha256": "58192d1324a965025e5f0cbea12163aff41bab30749cef37a6769c34516ab023"
+    },
+    {
+      "file": "tests/contracts/api-proxy-cases.json",
+      "sizeBytes": 7978,
+      "sha256": "83130cefe10bcc79f99f7696f534f4b1734137333b39c77c30dfb640b595a5c2"
+    },
+    {
+      "file": "tests/contracts/static-client-cases.json",
+      "sizeBytes": 2768,
+      "sha256": "92f5fda7f965509f03701724af30f5384b905eb39d83ac813056dd16d37d405b"
+    },
+    {
+      "file": "docs/modernization/contracts/host-contract.md",
+      "sizeBytes": 3776,
+      "sha256": "2a4753e5a5d4ba2ba9c61629b7268fc18ff7430ee41e636843028a2fc46f8bb9"
+    },
+    {
+      "file": "docs/modernization/contracts/host-config.schema.json",
+      "sizeBytes": 2905,
+      "sha256": "113f7cfd9948b8cef9048b33b46f9092b29e35c6c084d7c15559563b5b4e5ef7"
+    },
+    {
+      "file": "docs/modernization/contracts/candidate-compliance-checklist.md",
+      "sizeBytes": 2258,
+      "sha256": "da4fbb657901bc1be92a5b6487a009e2e9b11d4da201534f4a5cdaac54c03f38"
+    },
+    {
+      "file": "docs/modernization/adr/001-native-host-selection.md",
+      "sizeBytes": 7145,
+      "sha256": "52e9496c2420af2b82a63c89418e15f6999f5129718609b9168e912726ddc761"
+    },
+    {
+      "file": "docs/modernization/NATIVE_HOST_COMPATIBILITY_GUIDE.md",
+      "sizeBytes": 2294,
+      "sha256": "152ca75568181ec99dffeb09a248b20817e3f63ef4f70d60aa734af0520e153b"
+    },
+    {
+      "file": "scripts/build-static-client.js",
+      "sizeBytes": 3840,
+      "sha256": "5530e27a1dc7b36f61cad81f6466571244ce1ab41fffd0a5611cf654a29fd292"
+    },
+    {
+      "file": "src/contracts/api-proxy.ts",
+      "sizeBytes": 9654,
+      "sha256": "84c30616019af669f3983aa2cc4315cec09defd3502e77e13d629e7b28e0f88b"
+    },
+    {
+      "file": "src/contracts/static-client.ts",
+      "sizeBytes": 7339,
+      "sha256": "b065984db21b455fcd51d7c661c4fed4a5ac37670b1343b4cb77836a1f0f67bf"
+    }
+  ]
+}

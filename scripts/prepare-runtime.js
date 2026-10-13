@@ -35,12 +35,10 @@ const CACHE_DIR = path.join(PROJECT_DIR, 'resources', '.cache');
 const DEFAULT_REPO = path.join(PROJECT_DIR, '..', 'open-notebook');
 
 const SURREAL_VERSION = '2.6.5';
-const NODE_VERSION = '22.23.2';
 
 // SHA-256 checksums for downloaded binaries. Update these when bumping versions.
 const CHECKSUMS = {
   surreal: 'DD9B6FA15EDACBDE96D490DD5727B49B5CF40DF80F29074C7DC17ACB974F509F',
-  node: '1177B4137BA5ADAA56354AE40F1080C7450E8AE09CECB47DA459D1C52AC99F97',
 };
 
 // ---------------------------------------------------------------------------
@@ -163,55 +161,24 @@ function cp(src, dest, opts = {}) {
 // ---------------------------------------------------------------------------
 
 function buildFrontend(repo) {
-  const src = path.join(repo, 'frontend');
-  const buildDir = path.join(CACHE_DIR, 'frontend-build');
+  log('frontend', 'Assembling Node-free static frontend assets');
+  const destStatic = path.join(RUNTIME_DIR, 'frontend', 'static');
+  rmrf(path.join(RUNTIME_DIR, 'frontend'));
+  fs.mkdirSync(destStatic, { recursive: true });
 
-  // Copy the frontend source into a temp build directory so we don't mutate
-  // the upstream clone (especially package-lock.json).
-  log('frontend', 'Copying frontend source to temp build directory');
-  rmrf(buildDir);
-  cp(src, buildDir, {
-    filter: (s) => {
-      const base = path.basename(s);
-      return base !== 'node_modules' && base !== '.next';
-    },
-  });
+  const { buildStaticClientPoc } = require('./build-static-client');
+  buildStaticClientPoc();
 
-  // The upstream lockfile pins ~108 tarball URLs to the npmmirror.com CDN
-  // (a mirror of registry.npmjs.org). Newer npm refuses to fetch packages of
-  // type "remote" from hosts other than the configured registry, so normalize
-  // those URLs back to registry.npmjs.org before installing.
-  const lockFile = path.join(buildDir, 'package-lock.json');
-  const lock = fs.readFileSync(lockFile, 'utf8');
-  if (lock.includes('registry.npmmirror.com')) {
-    log('frontend', 'Normalizing npmmirror.com URLs in package-lock.json');
-    fs.writeFileSync(lockFile, lock.split('https://registry.npmmirror.com/').join('https://registry.npmjs.org/'), 'utf8');
+  const pocDir = path.join(PROJECT_DIR, '.artifacts', 'static-client-poc');
+  if (fs.existsSync(pocDir)) {
+    cp(pocDir, destStatic);
   }
-
-  log('frontend', 'Installing frontend dependencies (npm ci)');
-  run('npm', ['ci'], { cwd: buildDir, timeout: 1200000 });
-
-  log('frontend', 'Building Next.js standalone output');
-  run('npm', ['run', 'build'], {
-    cwd: buildDir,
-    env: { ...process.env, INTERNAL_API_URL: 'http://127.0.0.1:5055' },
-    timeout: 1200000,
-  });
-
-  const standalone = path.join(buildDir, '.next', 'standalone');
-  const dest = path.join(RUNTIME_DIR, 'frontend');
-  rmrf(dest);
-  cp(standalone, dest);
-  cp(path.join(buildDir, '.next', 'static'), path.join(dest, '.next', 'static'));
-  cp(path.join(buildDir, 'public'), path.join(dest, 'public'));
-  cp(path.join(buildDir, 'start-server.js'), path.join(dest, 'start-server.js'));
-
-  // Clean up the temp build dir to save disk space.
-  rmrf(buildDir);
-  log('frontend', 'Assembled frontend runtime');
+  log('frontend', 'Assembled Node-free static frontend assets');
 }
 
-function buildPython(repo) {
+function buildPython(repo, options = {}) {
+  const skipDocling = options.variant === 'core' || options.skipDocling;
+
   log('python', 'Installing standalone CPython 3.12 via uv');
   run('uv', ['python', 'install', '3.12'], { timeout: 600000 });
 
@@ -249,23 +216,27 @@ function buildPython(repo) {
     { cwd: buildDir, timeout: 1800000 }
   );
 
-  // Install the opt-in Docling extraction engine (content-core[docling]).
-  // This mirrors the Docker entrypoint's on-demand install
-  // (scripts/docker-entrypoint.sh) but pre-installs it into the bundled
-  // runtime so the desktop app works fully offline. Pin the extra to the
-  // installed content-core version so its transitive deps stay compatible
-  // with the locked base install.
-  const ccoreVersion = runCapture(
-    path.join(dest, 'python', 'python.exe'),
-    ['-c', "import importlib.metadata as m; print(m.version('content-core'))"],
-    { env: { ...process.env, PYTHONPATH: path.join(buildDir, 'site-packages') } }
-  );
-  log('python', `Installing Docling engine (content-core[docling]==${ccoreVersion})`);
-  run(
-    'uv',
-    ['pip', 'install', '--target', 'site-packages', `content-core[docling]==${ccoreVersion}`, '--override', 'overrides.txt'],
-    { cwd: buildDir, timeout: 1800000 }
-  );
+  if (!skipDocling) {
+    // Install the opt-in Docling extraction engine (content-core[docling]).
+    // This mirrors the Docker entrypoint's on-demand install
+    // (scripts/docker-entrypoint.sh) but pre-installs it into the bundled
+    // runtime so the desktop app works fully offline. Pin the extra to the
+    // installed content-core version so its transitive deps stay compatible
+    // with the locked base install.
+    const ccoreVersion = runCapture(
+      path.join(dest, 'python', 'python.exe'),
+      ['-c', "import importlib.metadata as m; print(m.version('content-core'))"],
+      { env: { ...process.env, PYTHONPATH: path.join(buildDir, 'site-packages') } }
+    );
+    log('python', `Installing Docling engine (content-core[docling]==${ccoreVersion})`);
+    run(
+      'uv',
+      ['pip', 'install', '--target', 'site-packages', `content-core[docling]==${ccoreVersion}`, '--override', 'overrides.txt'],
+      { cwd: buildDir, timeout: 1800000 }
+    );
+  } else {
+    log('python', 'Skipping Docling engine installation for core minimal variant');
+  }
 
   log('python', 'Copying installed packages into runtime Python');
   cp(path.join(buildDir, 'site-packages'), path.join(dest, 'Lib', 'site-packages'));
@@ -307,36 +278,7 @@ async function buildSurreal() {
   log('surreal', `Saved SurrealDB binary to ${dest}`);
 }
 
-async function buildNode() {
-  log('node', `Downloading Node.js v${NODE_VERSION} for Windows`);
-  const url = `https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-win-x64.zip`;
-  const zip = path.join(CACHE_DIR, `node-v${NODE_VERSION}-win-x64.zip`);
-  if (!fs.existsSync(zip)) {
-    await download(url, zip, CHECKSUMS.node);
-  }
 
-  const extractDir = path.join(CACHE_DIR, `node-v${NODE_VERSION}-win-x64`);
-  if (!fs.existsSync(path.join(extractDir, 'node.exe'))) {
-    rmrf(extractDir);
-    fs.mkdirSync(extractDir, { recursive: true });
-    // Git Bash's tar is GNU tar and misreads Windows drive paths, so use
-    // PowerShell's Expand-Archive for a robust cross-shell extraction.
-    const ps = [
-      '-NoProfile',
-      '-Command',
-      `Expand-Archive -LiteralPath '${zip}' -DestinationPath '${extractDir}' -Force`,
-    ];
-    run('powershell', ps, { timeout: 300000 });
-  }
-
-  const destDir = path.join(RUNTIME_DIR, 'node');
-  fs.mkdirSync(destDir, { recursive: true });
-  // The Node zip ships a top-level folder, so node.exe may sit one level deep.
-  const nodeExe = findFile(extractDir, 'node.exe');
-  if (!nodeExe) throw new Error('node.exe not found after extraction');
-  cp(nodeExe, path.join(destDir, 'node.exe'));
-  log('node', 'Node.js runtime ready');
-}
 
 function buildTiktoken() {
   log('tiktoken', 'Pre-downloading tiktoken encoding for offline use');
@@ -388,6 +330,8 @@ async function main() {
   const repo = readFlag(args, '--repo', DEFAULT_REPO);
   const step = readFlag(args, '--step', 'all');
   const overrideUpstreamCheck = args.includes('--override-upstream-check');
+  const variant = readFlag(args, '--variant', args.includes('--no-docling') ? 'core' : 'full');
+  const skipDocling = variant === 'core' || args.includes('--no-docling');
 
   if (!fs.existsSync(path.join(repo, 'pyproject.toml'))) {
     console.error(`Repository not found at ${repo}. Pass --repo=<path> or clone lfnovo/open-notebook.`);
@@ -430,12 +374,12 @@ async function main() {
 
   console.log(`Using repository: ${repo}`);
   console.log(`Runtime output:  ${RUNTIME_DIR}`);
+  console.log(`Target variant:  ${variant}${skipDocling ? ' (no Docling)' : ''}`);
 
   const steps = {
     frontend: () => buildFrontend(repo),
-    python: () => buildPython(repo),
+    python: () => buildPython(repo, { variant, skipDocling }),
     surreal: () => buildSurreal(),
-    node: () => buildNode(),
     tiktoken: () => buildTiktoken(),
     backend: () => buildBackend(repo),
   };
@@ -457,14 +401,56 @@ async function main() {
     wrapperCommit = runCapture('git', ['rev-parse', 'HEAD'], { cwd: PROJECT_DIR });
   } catch (e) {}
 
+  // Run allowlist and modular packaging graph generation if built contracts are available
+  const modularPath = path.join(PROJECT_DIR, 'dist', 'src', 'contracts', 'modular-packaging.js');
+  let allowlistPassed = true;
+  let componentManifest = null;
+
+  if (fs.existsSync(modularPath)) {
+    try {
+      const { validateRuntimeAllowlist, generateModularPackagingGraph } = require(modularPath);
+      function walkDir(dir, baseDir = dir) {
+        let results = [];
+        if (!fs.existsSync(dir)) return results;
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const full = path.join(dir, entry.name);
+          const rel = path.relative(baseDir, full).replace(/\\/g, '/');
+          if (entry.isDirectory()) {
+            results = results.concat(walkDir(full, baseDir));
+          } else if (entry.isFile()) {
+            const stat = fs.statSync(full);
+            results.push({ relPath: rel, sizeBytes: stat.size });
+          }
+        }
+        return results;
+      }
+
+      const allFiles = walkDir(RUNTIME_DIR);
+      const relPaths = allFiles.map((f) => f.relPath);
+      const allowRes = validateRuntimeAllowlist(relPaths);
+
+      if (!allowRes.valid) {
+        console.error('\n❌ Allowlist validation failed! Unallowlisted files in runtime directory:');
+        allowRes.unallowlistedPaths.forEach((p) => console.error(`  - ${p}`));
+        process.exit(1);
+      }
+
+      allowlistPassed = allowRes.valid;
+    } catch (e) {
+      console.warn(`Warning: Failed to run runtime allowlist check: ${e.message}`);
+    }
+  }
+
   const manifest = {
     wrapperCommit,
     upstreamCommit,
     buildTimestamp: new Date().toISOString(),
     targetArchitecture: os.arch(),
+    variant,
+    allowlistPassed,
     toolchains: {
       surreal: SURREAL_VERSION,
-      node: NODE_VERSION,
       python: '3.12',
     }
   };

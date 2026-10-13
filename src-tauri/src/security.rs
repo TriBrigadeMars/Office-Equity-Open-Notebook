@@ -4,19 +4,26 @@ use tauri::api::shell::open;
 pub fn apply_navigation_policy(window: &Window) {
     let window_clone = window.clone();
     window.on_navigation(move |url| {
-        let url_str = url.as_str();
-        // Allow strictly local app origin
-        if url_str.starts_with("http://127.0.0.1:8502") {
-            return true; // allow
+        // Allow strictly local app origin (http://127.0.0.1:8502) without userinfo
+        let is_local_origin = url.scheme() == "http"
+            && url.host_str() == Some("127.0.0.1")
+            && url.port() == Some(8502)
+            && url.username().is_empty()
+            && url.password().is_none();
+
+        if is_local_origin {
+            return true; // allow internal navigation
         }
 
+        let url_str = url.as_str();
+
         // Deny file URIs and other local schemes
-        if url_str.starts_with("file://") {
+        if url.scheme() == "file" || url_str.starts_with("file://") {
             return false; // deny
         }
 
-        // Delegate http/https to system browser
-        if url_str.starts_with("http://") || url_str.starts_with("https://") {
+        // Delegate external http/https to system browser
+        if url.scheme() == "http" || url.scheme() == "https" {
             let _ = open(&window_clone.shell_scope(), url_str, None);
         }
 

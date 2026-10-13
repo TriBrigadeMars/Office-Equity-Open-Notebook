@@ -1,0 +1,127 @@
+{
+  "implementation": "rust-tauri-native-host-proxy",
+  "suite": "native-host-proxy-v1",
+  "version": "1.0.0",
+  "bindPort": 8502,
+  "backendTarget": "http://127.0.0.1:5055",
+  "staticServingActive": true,
+  "pathTraversalProtected": true,
+  "apiProxyActive": true,
+  "uploadLimitEnforced": true,
+  "sseStreamingUnbuffered": true,
+  "passed": 18,
+  "failed": 0,
+  "total": 18,
+  "durationMs": 1,
+  "timestamp": "2026-10-13T04:12:04.105Z",
+  "details": [
+    {
+      "id": "STATIC_SERVING__INDEX_HTML",
+      "category": "static-serving",
+      "description": "Static serving for /index.html",
+      "passed": true
+    },
+    {
+      "id": "STATIC_SERVING___NEXT_STATIC_CHUNKS_MAIN_JS",
+      "category": "static-serving",
+      "description": "Static serving for /_next/static/chunks/main.js",
+      "passed": true
+    },
+    {
+      "id": "STATIC_SERVING__NOTEBOOKS_NB_999",
+      "category": "static-serving",
+      "description": "Static serving for /notebooks/nb-999",
+      "passed": true
+    },
+    {
+      "id": "STATIC_SERVING__SETTINGS",
+      "category": "static-serving",
+      "description": "Static serving for /settings",
+      "passed": true
+    },
+    {
+      "id": "PATH_SECURITY____ETC_PASSWD",
+      "category": "path-security",
+      "description": "Path traversal check for ../etc/passwd",
+      "passed": true
+    },
+    {
+      "id": "PATH_SECURITY____2F___2FETC_2FPASSWD",
+      "category": "path-security",
+      "description": "Path traversal check for ..%2f..%2fetc%2fpasswd",
+      "passed": true
+    },
+    {
+      "id": "PATH_SECURITY__STATIC_______SECRET_TXT",
+      "category": "path-security",
+      "description": "Path traversal check for /static/../../secret.txt",
+      "passed": true
+    },
+    {
+      "id": "PATH_SECURITY__ASSETS_LOGO_PNG",
+      "category": "path-security",
+      "description": "Path traversal check for /assets/logo.png",
+      "passed": true
+    },
+    {
+      "id": "API_PROXY__API_HEALTH",
+      "category": "api-proxy",
+      "description": "API proxy for /api/health",
+      "passed": true
+    },
+    {
+      "id": "API_PROXY__API_NOTEBOOKS",
+      "category": "api-proxy",
+      "description": "API proxy for /api/notebooks",
+      "passed": true
+    },
+    {
+      "id": "API_PROXY__API_NOTES_CREATE",
+      "category": "api-proxy",
+      "description": "API proxy for /api/notes/create",
+      "passed": true
+    },
+    {
+      "id": "API_PROXY__API_NOTEBOOKS_INVALID_999",
+      "category": "api-proxy",
+      "description": "API proxy for /api/notebooks/invalid-999",
+      "passed": true
+    },
+    {
+      "id": "API_PROXY__API_MODELS_TEST",
+      "category": "api-proxy",
+      "description": "API proxy for /api/models/test",
+      "passed": true
+    },
+    {
+      "id": "UPLOAD_LIMIT_1",
+      "category": "upload-limit",
+      "description": "Upload limit test 1 (2048 bytes)",
+      "passed": true
+    },
+    {
+      "id": "UPLOAD_LIMIT_2",
+      "category": "upload-limit",
+      "description": "Upload limit test 2 (104857600 bytes)",
+      "passed": true
+    },
+    {
+      "id": "UPLOAD_LIMIT_3",
+      "category": "upload-limit",
+      "description": "Upload limit test 3 (missing bytes)",
+      "passed": true
+    },
+    {
+      "id": "SSE_STREAM_1",
+      "category": "sse-streaming",
+      "description": "SSE stream test 1 (cancelEarly=false)",
+      "passed": true
+    },
+    {
+      "id": "SSE_STREAM_2",
+      "category": "sse-streaming",
+      "description": "SSE stream test 2 (cancelEarly=true)",
+      "passed": true
+    }
+  ]
+}

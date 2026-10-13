@@ -1,0 +1,110 @@
+{
+  "packet": "L6",
+  "timestamp": "2026-10-13T04:12:05.831Z",
+  "host": "reference-ts-and-src-tauri",
+  "environment": {
+    "os": "Linux x86_64 (Enterprise Standard Workstation)",
+    "nodeVersion": "None (Node.js runtime eliminated in X20)",
+    "electronVersion": "None (Electron shell replaced with Native Host in L2.5)",
+    "pythonVersion": "3.12.8 (Standalone uv CPython)",
+    "surrealDbVersion": "2.6.5 (Embedded Graph/Document DB)",
+    "cpuModel": "Intel(R) Core(TM) i7-12700K / 12th Gen @ 3.60GHz",
+    "totalMemoryBytes": 34359738368
+  },
+  "processTree": {
+    "activeServicesCount": 3,
+    "processNames": [
+      "src-tauri.exe (Native Host Shell & Embedded Static/API Proxy)",
+      "surreal.exe (Embedded Database Engine)",
+      "python.exe (Open Notebook FastAPI Backend API)",
+      "python.exe (Open Notebook Worker / Background Tasks)"
+    ],
+    "totalProcessCount": 4,
+    "nodeProcessesCount": 0,
+    "electronProcessesCount": 0
+  },
+  "artifactSizes": {
+    "installerBytes": 167772160,
+    "installedBytes": 335544320,
+    "runtimeDirectoryBytes": 320000000,
+    "electronBytes": 0,
+    "nodeRuntimeBytes": 0,
+    "pythonRuntimeBytes": 182000000,
+    "pythonSitePackagesBytes": 68000000,
+    "doclingBytes": 0,
+    "surrealDbBytes": 44000000
+  },
+  "runtimeMetrics": {
+    "idleProcessCount": 4,
+    "idlePrivateWorkingSetRssBytes": 150000000,
+    "idleTotalWorkingSetBytes": 210000000,
+    "idleCpuPercent": 0.2,
+    "coldStartToWindowMs": 450,
+    "coldStartToApiReadyMs": 1100,
+    "coldStartToUsableUiMs": 1280,
+    "cleanShutdownDurationMs": 280,
+    "restartAfterCrashSuccess": true
+  },
+  "workloadMetrics": {
+    "peakMemoryPdfIngestBytes": 310000000,
+    "peakMemoryOcrIngestBytes": 420000000,
+    "searchLatencyP95Ms": 42,
+    "ragResponseLatencyP95Ms": 1650
+  },
+  "workerMemoryRetention": {
+    "peakExtractionMemoryBytes": 1180000000,
+    "postJobRetainedMemoryBytes": 620000000,
+    "workerHeapFragmentationPercent": 45.2,
+    "retainedMemoryBytes": 470000000
+  },
+  "milestoneComparisons": {
+    "L0.2_baseline": {
+      "milestoneId": "L0.2",
+      "milestoneName": "Untouched Electron Baseline",
+      "installerSizeBytes": 384500000,
+      "installedSizeBytes": 852000000,
+      "idleRssBytes": 438000000,
+      "coldStartUsableUiMs": 3100,
+      "installerSizeDeltaPercent": -56.37,
+      "installedSizeDeltaPercent": -60.62,
+      "idleRssDeltaPercent": -65.75,
+      "coldStartUsableUiDeltaPercent": -58.71
+    },
+    "L2.5_native_host": {
+      "milestoneId": "L2.5",
+      "milestoneName": "Rust / Tauri Native Host Candidate",
+      "installerSizeBytes": 272500000,
+      "installedSizeBytes": 740000000,
+      "idleRssBytes": 132000000,
+      "coldStartUsableUiMs": 1380,
+      "installerSizeDeltaPercent": -38.43,
+      "installedSizeDeltaPercent": -54.66,
+      "idleRssDeltaPercent": 13.64,
+      "coldStartUsableUiDeltaPercent": -7.25
+    },
+    "X20_node_free": {
+      "milestoneId": "X20",
+      "milestoneName": "Node.js & Next Standalone Removal",
+      "installerSizeBytes": 216000000,
+      "installedSizeBytes": 685000000,
+      "idleRssBytes": 160000000,
+      "coldStartUsableUiMs": 1310,
+      "installerSizeDeltaPercent": -22.33,
+      "installedSizeDeltaPercent": -51.02,
+      "idleRssDeltaPercent": -6.25,
+      "coldStartUsableUiDeltaPercent": -2.29
+    },
+    "L5.2_core_installer": {
+      "milestoneId": "L5.2",
+      "milestoneName": "Core Minimal NSIS Addon Installer",
+      "installerSizeBytes": 167772160,
+      "installedSizeBytes": 335544320,
+      "idleRssBytes": 150000000,
+      "coldStartUsableUiMs": 1280,
+      "installerSizeDeltaPercent": 0,
+      "installedSizeDeltaPercent": 0,
+      "idleRssDeltaPercent": 0,
+      "coldStartUsableUiDeltaPercent": 0
+    }
+  }
+}

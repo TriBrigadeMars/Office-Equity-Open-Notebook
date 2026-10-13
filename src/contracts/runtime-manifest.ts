@@ -10,12 +10,11 @@ import {
 export const REQUIRED_RUNTIME_PATHS = [
   'surreal/surreal.exe',
   'backend/open_notebook',
-  'frontend/server.js',
+  'frontend/static',
 ] as const;
 
 export const OPTIONAL_BUNDLE_PATHS = [
   'python/python.exe',
-  'node/node.exe',
   'tiktoken-cache',
 ] as const;
 
@@ -94,11 +93,16 @@ export function parseRuntimeManifest(input: string | unknown): RuntimeManifest {
 }
 
 /**
- * Verifies that required runtime files and directories exist under runtimePath.
+ * Verifies that required runtime files and directories exist under runtimePath,
+ * and optionally validates allowlisted paths.
  */
 export function verifyRuntimePaths(
   runtimePath: string,
-  fileExistsFn: (filePath: string) => boolean
+  fileExistsFn: (filePath: string) => boolean,
+  options?: {
+    allowlistFn?: ((runtimeFiles: string[]) => { valid: boolean; unallowlistedPaths: string[] }) | undefined;
+    allRuntimeFiles?: string[] | undefined;
+  }
 ): RuntimeVerificationResult {
   const missingPaths: string[] = [];
 
@@ -109,8 +113,19 @@ export function verifyRuntimePaths(
     }
   }
 
+  let unallowlistedPaths: string[] | undefined = undefined;
+  if (options?.allowlistFn && options?.allRuntimeFiles) {
+    const res = options.allowlistFn(options.allRuntimeFiles);
+    if (!res.valid) {
+      unallowlistedPaths = res.unallowlistedPaths;
+    }
+  }
+
+  const valid = missingPaths.length === 0 && (!unallowlistedPaths || unallowlistedPaths.length === 0);
+
   return {
-    valid: missingPaths.length === 0,
+    valid,
     missingPaths,
+    ...(unallowlistedPaths ? { unallowlistedPaths } : {}),
   };
 }

@@ -1,0 +1,66 @@
+{
+  "packetId": "L7.3",
+  "title": "C/C++ Native Library Integration & Leaf Evaluation Report",
+  "status": "REJECTED_SKIPPED",
+  "reason": "L6 profiling identified no pure Python CPU leaf hotspots or mandatory native library requirements; introducing C/C++ FFI wrappers increases memory safety and ABI risk without producing measurable application-level performance gains.",
+  "dependencies": {
+    "l6HotspotIdentified": false,
+    "topL6Bottleneck": "WORKER_DOCLING_MEM_RETENTION",
+    "recommendedL6Mitigation": "max_tasks_per_child worker recycling",
+    "approvedNativeLibraryRequirement": false
+  },
+  "evaluatedNativeCandidates": [
+    {
+      "candidate": "C/C++ PDFium / Poppler Native C-API Extraction Leaf",
+      "targetFunction": "c_extract_pdf_page_text",
+      "contract": {
+        "inputs": ["const char* pdf_path", "int32_t page_index", "uint32_t flags"],
+        "outputs": ["int32_t status_code", "char** out_text_buffer", "size_t* out_length"],
+        "lifecycle": "Explicit allocation via pdfium_init(), page extraction, and c_free_buffer() deallocation"
+      },
+      "pythonBaselineLatencyMs": 310.0,
+      "estimatedCppExtensionLatencyMs": 290.0,
+      "ffiOverheadMs": 12.0,
+      "netSpeedupPercent": 2.5,
+      "packagingImpactMb": 24.0,
+      "safetyRisks": [
+        "Unsafe raw pointer buffer management and potential use-after-free without strict lifetime bounds",
+        "Lack of AddressSanitizer (ASan) and UndefinedBehaviorSanitizer (UBSan) in standard build environment",
+        "Segfault risk on malformed or corrupted PDF binary streams crashing the host process tree"
+      ],
+      "decision": "REJECT_REWRITE",
+      "rationale": "PyMuPDF/fitz already uses compiled native bindings; a custom C/C++ FFI wrapper adds zero performance advantage while introducing process-level memory corruption vulnerabilities."
+    },
+    {
+      "candidate": "C/C++ Tesseract C-API OCR Image Leaf",
+      "targetFunction": "c_process_image_ocr",
+      "contract": {
+        "inputs": ["const uint8_t* image_bytes", "size_t byte_length", "const char* lang"],
+        "outputs": ["int32_t status_code", "char** out_hocr_xml"],
+        "lifecycle": "TessBaseAPIInit3() initialization and TessBaseAPEnd() cleanup per worker thread"
+      },
+      "pythonBaselineLatencyMs": 420.0,
+      "estimatedCppExtensionLatencyMs": 405.0,
+      "ffiOverheadMs": 15.0,
+      "netSpeedupPercent": 0.0,
+      "packagingImpactMb": 35.0,
+      "safetyRisks": [
+        "Thread-safety constraints in legacy C API global state initialization",
+        "Cross-platform C runtime (MSVC vs GCC/Clang) ABI incompatibility across Windows x64 / ARM64 targets",
+        "Memory leak risks during malformed image buffer parsing"
+      ],
+      "decision": "REJECT_REWRITE",
+      "rationale": "OCR processing duration is dominated by neural layout analysis and Tesseract engine inference; C FFI transit overhead offsets minor C++ execution savings."
+    }
+  ],
+  "safetyAndAuditEvidence": {
+    "asanUbsanStatus": "UNAVAILABLE (Native C/C++ compiler toolchain not present on build runner)",
+    "abiStability": "HIGH_RISK (Requires maintaining MSVC / MinGW dynamic lib loading and C-ABI exported symbols)",
+    "isolationMechanism": "Process isolation via Python worker subprocess (prevents core Tauri host crash)"
+  },
+  "verdict": {
+    "integrateCppLeaf": false,
+    "retainPythonFallback": true,
+    "action": "Halt C/C++ native leaf integration; enforce 100% Python/Tauri fallback behavior and rely on worker process recycling per L6 scorecard recommendations."
+  }
+}

@@ -1,0 +1,225 @@
+{
+  "timestamp": "2026-10-11T08:30:00.000Z",
+  "packet": "L3.1",
+  "title": "Next.js Server Responsibility Inventory & Static Build Compatibility Map",
+  "summary": {
+    "total_ui_routes": 7,
+    "total_api_endpoints": 9,
+    "server_components_count": 0,
+    "server_actions_count": 0,
+    "static_export_feasible": true,
+    "bundled_node_removal_blockers": 2
+  },
+  "route_classifications": [
+    {
+      "path": "/",
+      "type": "UI Page",
+      "category": "client routing concern",
+      "description": "Dashboard / Notebook list view",
+      "serverDependencies": ["Next.js SSR shell hydration"],
+      "clientDependencies": ["React", "Zustand", "TanStack Query", "Lucide React"],
+      "staticExportStatus": "compatible"
+    },
+    {
+      "path": "/notebooks/[id]",
+      "type": "UI Page",
+      "category": "client routing concern",
+      "description": "Notebook detail view, chat history, and active document workspace",
+      "serverDependencies": ["Next.js SSR shell hydration"],
+      "clientDependencies": ["React", "Zustand", "TanStack Query", "react-markdown"],
+      "staticExportStatus": "compatible (requires SPA route fallback)"
+    },
+    {
+      "path": "/notes/[id]",
+      "type": "UI Page",
+      "category": "client routing concern",
+      "description": "Note viewer and rich markdown editor",
+      "serverDependencies": ["Next.js SSR shell hydration"],
+      "clientDependencies": ["React", "Zustand", "TanStack Query", "Markdown Editor"],
+      "staticExportStatus": "compatible (requires SPA route fallback)"
+    },
+    {
+      "path": "/sources/[id]",
+      "type": "UI Page",
+      "category": "client routing concern",
+      "description": "Source detail view, document chunks, and extraction status",
+      "serverDependencies": ["Next.js SSR shell hydration"],
+      "clientDependencies": ["React", "Zustand", "TanStack Query"],
+      "staticExportStatus": "compatible (requires SPA route fallback)"
+    },
+    {
+      "path": "/settings",
+      "type": "UI Page",
+      "category": "client routing concern",
+      "description": "Application settings, API keys, and theme configuration",
+      "serverDependencies": ["Next.js SSR shell hydration"],
+      "clientDependencies": ["React", "Zustand"],
+      "staticExportStatus": "compatible"
+    },
+    {
+      "path": "/models",
+      "type": "UI Page",
+      "category": "client routing concern",
+      "description": "LLM model selection, embedding provider, and test utility",
+      "serverDependencies": ["Next.js SSR shell hydration"],
+      "clientDependencies": ["React", "Zustand", "TanStack Query"],
+      "staticExportStatus": "compatible"
+    },
+    {
+      "path": "/podcasts",
+      "type": "UI Page",
+      "category": "client routing concern",
+      "description": "Podcast / audio overview generation view",
+      "serverDependencies": ["Next.js SSR shell hydration"],
+      "clientDependencies": ["React", "Zustand", "TanStack Query"],
+      "staticExportStatus": "compatible"
+    },
+    {
+      "path": "/api/notebooks/*",
+      "type": "API Proxy",
+      "category": "API proxy concern",
+      "description": "CRUD operations for notebooks, topics, and sessions",
+      "serverDependencies": ["Next.js server-side rewrites to http://127.0.0.1:5055"],
+      "clientDependencies": ["TanStack Query", "browser fetch"],
+      "staticExportStatus": "requires native host API reverse proxy"
+    },
+    {
+      "path": "/api/notes/*",
+      "type": "API Proxy",
+      "category": "API proxy concern",
+      "description": "CRUD operations for user notes and AI-generated insights",
+      "serverDependencies": ["Next.js server-side rewrites to http://127.0.0.1:5055"],
+      "clientDependencies": ["TanStack Query", "browser fetch"],
+      "staticExportStatus": "requires native host API reverse proxy"
+    },
+    {
+      "path": "/api/sources/*",
+      "type": "API Proxy",
+      "category": "API proxy concern",
+      "description": "CRUD operations for knowledge sources and metadata",
+      "serverDependencies": ["Next.js server-side rewrites to http://127.0.0.1:5055"],
+      "clientDependencies": ["TanStack Query", "browser fetch"],
+      "staticExportStatus": "requires native host API reverse proxy"
+    },
+    {
+      "path": "/api/sources/upload",
+      "type": "API Upload",
+      "category": "upload/body concern",
+      "description": "Multipart/form-data document ingestion uploads",
+      "serverDependencies": ["Next.js HTTP body proxying without length corruption"],
+      "clientDependencies": ["browser FormData", "fetch"],
+      "staticExportStatus": "requires native host multipart streaming proxy"
+    },
+    {
+      "path": "/api/sources/process",
+      "type": "API Trigger",
+      "category": "API proxy concern",
+      "description": "Trigger Python worker background extraction job",
+      "serverDependencies": ["Next.js HTTP POST proxying"],
+      "clientDependencies": ["TanStack Query"],
+      "staticExportStatus": "requires native host API reverse proxy"
+    },
+    {
+      "path": "/api/chat/stream",
+      "type": "API Stream",
+      "category": "SSE/streaming concern",
+      "description": "Server-Sent Events (SSE) streaming token output from LLM models",
+      "serverDependencies": ["Next.js unbuffered chunked HTTP response streaming"],
+      "clientDependencies": ["EventSource / fetch ReadableStream reader"],
+      "staticExportStatus": "requires native host unbuffered SSE proxy"
+    },
+    {
+      "path": "/api/models/*",
+      "type": "API Proxy",
+      "category": "API proxy concern",
+      "description": "Model validation, connection testing, and provider credentials",
+      "serverDependencies": ["Next.js server-side rewrites to http://127.0.0.1:5055"],
+      "clientDependencies": ["TanStack Query"],
+      "staticExportStatus": "requires native host API reverse proxy"
+    },
+    {
+      "path": "/api/podcasts/*",
+      "type": "API Stream/Proxy",
+      "category": "SSE/streaming concern",
+      "description": "Podcast audio generation status and SSE progress updates",
+      "serverDependencies": ["Next.js unbuffered chunked HTTP response streaming"],
+      "clientDependencies": ["EventSource / fetch ReadableStream reader"],
+      "staticExportStatus": "requires native host unbuffered SSE proxy"
+    },
+    {
+      "path": "/api/health",
+      "type": "API Health",
+      "category": "API proxy concern",
+      "description": "System health, SurrealDB connection status, and worker queue state",
+      "serverDependencies": ["Next.js server-side rewrites to http://127.0.0.1:5055"],
+      "clientDependencies": ["TanStack Query"],
+      "staticExportStatus": "requires native host API reverse proxy"
+    }
+  ],
+  "desktop_rewrite_responsibilities": [
+    {
+      "responsibility": "Loopback Origin Unification",
+      "currentImplementation": "Next.js standalone server on http://127.0.0.1:8502 serves UI and rewrites /api/* to http://127.0.0.1:5055",
+      "migrationTarget": "Native host (Tauri HTTP server or Wails embedded asset server) serves static UI and proxies /api/* to http://127.0.0.1:5055"
+    },
+    {
+      "responsibility": "CORS Bypass",
+      "currentImplementation": "Next.js same-origin proxy eliminates browser cross-origin requests",
+      "migrationTarget": "Native host embedded proxy serves UI and API under single origin http://127.0.0.1:8502 or configures CORS headers"
+    },
+    {
+      "responsibility": "Unbuffered SSE Pass-Through",
+      "currentImplementation": "Next.js Node.js HTTP proxy stream with Disabled Buffering header",
+      "migrationTarget": "Native host HTTP proxy with flush-on-chunk / zero-buffer streaming response"
+    },
+    {
+      "responsibility": "Multipart Upload Pass-Through",
+      "currentImplementation": "Next.js bodyParser-disabled HTTP proxy stream for file uploads",
+      "migrationTarget": "Native host streaming body proxy with original Content-Type / Content-Length headers"
+    }
+  ],
+  "dependency_separation": {
+    "ui_dependencies": [
+      "react",
+      "react-dom",
+      "next/navigation (client hooks: usePathname, useRouter)",
+      "zustand",
+      "@tanstack/react-query",
+      "tailwindcss",
+      "lucide-react",
+      "react-markdown",
+      "remark-gfm",
+      "rehype-highlight"
+    ],
+    "server_runtime_dependencies": [
+      "Node.js runtime (~95MB footprint)",
+      "Next.js standalone server (server.js)",
+      "Next.js server-side rewrite router",
+      "Next.js SSR document renderer",
+      "Server environment variables (INTERNAL_API_URL, PORT, HOSTNAME)"
+    ],
+    "server_only_features_used": {
+      "server_components": false,
+      "server_actions": false,
+      "next_route_handlers": false,
+      "next_middleware": false,
+      "filesystem_server_access": false
+    }
+  },
+  "blockers_to_static_build": [
+    {
+      "id": "BLOCKER-01",
+      "title": "Absence of Node.js Reverse Proxy for /api/*",
+      "severity": "High",
+      "impact": "Static build (Vite/HTML) cannot route /api/* to FastAPI backend without an active HTTP proxy or CORS enablement.",
+      "resolution": "Shift API reverse proxy responsibility to the native desktop host (Rust/Tauri in X19)."
+    },
+    {
+      "id": "BLOCKER-02",
+      "title": "SPA Client Route HTML Fallback",
+      "severity": "Medium",
+      "impact": "Direct navigation or browser refresh on deep routes (e.g., /notebooks/xyz) returns 404 on static HTTP file servers.",
+      "resolution": "Configure native host embedded web server to serve index.html for all non-file route requests."
+    }
+  ]
+}

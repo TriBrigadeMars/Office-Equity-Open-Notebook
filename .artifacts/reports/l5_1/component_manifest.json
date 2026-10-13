@@ -1,0 +1,72 @@
+{
+  "components": {
+    "core_host_frontend": {
+      "name": "Core Host & Frontend",
+      "path": "frontend/static",
+      "status": "present",
+      "category": "required",
+      "description": "Native host binary and static client frontend assets",
+      "relativePaths": [
+        "frontend/static"
+      ],
+      "provenance": "Native Tauri static client build",
+      "fileCount": 45,
+      "sizeBytes": 25000000
+    },
+    "surrealdb": {
+      "name": "SurrealDB",
+      "path": "surreal/surreal.exe",
+      "status": "present",
+      "category": "required",
+      "description": "SurrealDB v2.6.5 embedded graph/document database engine",
+      "relativePaths": [
+        "surreal/surreal.exe"
+      ],
+      "provenance": "SurrealDB official Windows release binary",
+      "fileCount": 1,
+      "sizeBytes": 45000000
+    },
+    "python_backend": {
+      "name": "Python Core Backend",
+      "path": "python/python.exe",
+      "status": "present",
+      "category": "required",
+      "description": "Standalone CPython 3.12 runtime and Open Notebook Python API code",
+      "relativePaths": [
+        "python/python.exe",
+        "backend/open_notebook",
+        "backend/api"
+      ],
+      "provenance": "uv CPython 3.12 standalone distribution + upstream commit",
+      "fileCount": 4200,
+      "sizeBytes": 250000000
+    },
+    "docling": {
+      "name": "Docling Extraction Engine",
+      "path": "python/Lib/site-packages/docling",
+      "status": "present",
+      "category": "optional",
+      "description": "Docling table and document extraction module (content-core[docling])",
+      "relativePaths": [
+        "python/Lib/site-packages/docling",
+        "python/Lib/site-packages/content_core"
+      ],
+      "provenance": "uv PyPI optional dependency extra",
+      "fileCount": 3200,
+      "sizeBytes": 350000000
+    },
+    "tiktoken_cache": {
+      "name": "Tiktoken Encoding Cache",
+      "path": "tiktoken-cache",
+      "status": "present",
+      "category": "optional",
+      "description": "Pre-cached tiktoken o200k_base encoding for offline RAG token counting",
+      "relativePaths": [
+        "tiktoken-cache"
+      ],
+      "provenance": "tiktoken pre-downloaded offline cache",
+      "fileCount": 1,
+      "sizeBytes": 15000000
+    }
+  }
+}

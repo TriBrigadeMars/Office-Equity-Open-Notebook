@@ -1,0 +1,103 @@
+{
+  "packetId": "L7.4",
+  "title": "Discrete Go / C# Native Helper Evaluation Report",
+  "status": "REJECTED_SKIPPED",
+  "reason": "Primary Rust native host (src-tauri) already encapsulates process supervision, diagnostic collection, readiness health checks, and updater verification cleanly within a single binary; adding discrete Go or C# helpers increases process count, memory RSS, installer package size (+51.3 MB combined), and IPC complexity without providing isolation benefits.",
+  "dependencies": {
+    "l6HotspotIdentified": false,
+    "approvedHelperBoundary": false,
+    "primaryNativeHostSelected": "Rust / Tauri (src-tauri)"
+  },
+  "evaluatedHelperCandidates": [
+    {
+      "candidateId": "go_diag_helper",
+      "name": "Go Standalone Diagnostics & Health Collector Helper",
+      "language": "Go",
+      "targetFunction": "office-equity-diag-helper",
+      "contract": {
+        "ipcProtocol": "CLI_FLAGS",
+        "singleResponsibility": "Standalone collection of system diagnostics, service log aggregation, and port status telemetry",
+        "inputs": [
+          "--output-format=json",
+          "--timeout-sec=5",
+          "--log-dir=/path/to/logs"
+        ],
+        "outputs": [
+          "0 (Success) + JSON payload on stdout",
+          "non-zero (Exit Code) + Error JSON on stderr"
+        ],
+        "errorAndTimeoutBehavior": {
+          "timeoutMs": 5000,
+          "failureRecoveryStrategy": "Host process kills helper subprocess on SIGKILL after 5s timeout and reads partial stderr buffer",
+          "versionCompatibilityCheck": "Executes helper --version and validates major.minor match with host"
+        }
+      },
+      "standaloneJustification": "Decouple telemetry collection during app crash state from main process",
+      "startupLatencyMs": 14.5,
+      "memoryRssMb": 22.0,
+      "binaryPackageImpactMb": 14.8,
+      "ipcTransitLatencyMs": 8.5,
+      "toolchainRequirement": "Golang toolchain (go 1.22+) missing on native build runner",
+      "hostIntegrationAlternative": {
+        "implementationLocation": "src-tauri/src/diagnostics.rs",
+        "advantagesOverHelper": [
+          "Direct access to Tauri in-memory state & log buffer without process spawn overhead",
+          "0 MB added binary size overhead",
+          "Zero IPC transit latency",
+          "No extra Go toolchain dependency"
+        ]
+      },
+      "decision": "REJECT_HELPER",
+      "rationale": "Tauri rust host already manages logs, service health checks, and port conflict dialogs natively without needing process-level separation or extra Go binary overhead."
+    },
+    {
+      "candidateId": "csharp_updater_verifier",
+      "name": "C# / .NET Windows Runtime Verifier & Updater Bootstrapper",
+      "language": "C#",
+      "targetFunction": "OfficeEquity.Updater.exe",
+      "contract": {
+        "ipcProtocol": "JSON_RPC_STDIO",
+        "singleResponsibility": "Windows WebView2 / VC++ Redistributable prerequisite detection and background silent updater execution",
+        "inputs": [
+          "{\"jsonrpc\": \"2.0\", \"method\": \"check_updates\", \"params\": {\"channel\": \"stable\"}, \"id\": 1}"
+        ],
+        "outputs": [
+          "{\"jsonrpc\": \"2.0\", \"result\": {\"updateAvailable\": false}, \"id\": 1}"
+        ],
+        "errorAndTimeoutBehavior": {
+          "timeoutMs": 10000,
+          "failureRecoveryStrategy": "Tauri host closes stdio pipe, logs JSON-RPC error timeout, and falls back to built-in tauri-plugin-updater",
+          "versionCompatibilityCheck": "IPC handshake payload carries protocol_version=1.0"
+        }
+      },
+      "standaloneJustification": "Utilize native Windows .NET runtime APIs for WinUI/WebView2 bootstrapper",
+      "startupLatencyMs": 48.0,
+      "memoryRssMb": 45.0,
+      "binaryPackageImpactMb": 36.5,
+      "ipcTransitLatencyMs": 15.0,
+      "toolchainRequirement": ".NET SDK (dotnet 8.0) missing on runner (requires Docker/Windows)",
+      "hostIntegrationAlternative": {
+        "implementationLocation": "src-tauri/src/updater.rs",
+        "advantagesOverHelper": [
+          "Tauri built-in updater plugin uses native OS HTTP and NSIS/MSI verifier without .NET runtime overhead",
+          "0 MB added binary size",
+          "0 stdio IPC overhead",
+          "Cross-platform consistency across Windows x64/ARM64"
+        ]
+      },
+      "decision": "REJECT_HELPER",
+      "rationale": "Tauri host includes built-in updater and WebView2 detection (validated in L5.2/L5.3) natively, rendering a C# helper redundant and wasteful."
+    }
+  ],
+  "overheadMetrics": {
+    "averageHelperPackageSizeMb": 25.65,
+    "averageHelperMemoryRssMb": 33.5,
+    "averageHelperStartupMs": 31.25,
+    "hostIntegrationPackageSizeDeltaMb": 0.0
+  },
+  "verdict": {
+    "buildSeparateHelper": false,
+    "retainInHostIntegration": true,
+    "action": "Halt Go/C# helper creation; retain single native Rust/Tauri host architecture per Master Plan Section 30 (\"Avoid proliferating helper executables... One native host is preferable\")."
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "packetId": "L7.2",
+  "title": "Rust Python Extension Evaluation Report",
+  "status": "REJECTED_SKIPPED",
+  "reason": "L6 profiling identified no pure Python CPU leaf hotspots; FFI boundary overhead and packaging complexity outweigh potential performance gains.",
+  "dependencies": {
+    "l6HotspotIdentified": false,
+    "topL6Bottleneck": "WORKER_DOCLING_MEM_RETENTION",
+    "recommendedL6Mitigation": "max_tasks_per_child worker recycling"
+  },
+  "candidateEvaluations": [
+    {
+      "candidate": "PyO3 / Maturin Document Parsing Leaf Extension",
+      "targetFunction": "pdf_text_extraction_and_layout_analysis",
+      "pythonBaselineLatencyMs": 310.0,
+      "estimatedRustExtensionLatencyMs": 295.0,
+      "ffiOverheadMs": 8.5,
+      "netSpeedupPercent": 4.8,
+      "packagingImpactMb": 18.5,
+      "decision": "REJECT_REWRITE",
+      "rationale": "High engineering risk of OCR/table parsing regressions; PyTorch memory retention is not solved by FFI leaf optimization."
+    },
+    {
+      "candidate": "PyO3 Text Tokenization / Chunking Leaf Extension",
+      "targetFunction": "tiktoken_and_text_splitter_leaf",
+      "pythonBaselineLatencyMs": 1.2,
+      "estimatedRustExtensionLatencyMs": 0.3,
+      "ffiOverheadMs": 0.8,
+      "netSpeedupPercent": 10.0,
+      "packagingImpactMb": 12.0,
+      "decision": "REJECT_REWRITE",
+      "rationale": "Operation takes <1.5 ms in pure Python; PyO3 CPython GIL acquire + PyString conversion overhead negates execution savings."
+    }
+  ],
+  "packagingImpact": {
+    "wheelSizeIncreaseMb": 18.5,
+    "crossCompilationComplexity": "HIGH (requires Windows x64/ARM64 maturin cross-compilation toolchain)",
+    "toolchainRequirement": "Cargo / Rust compiler (not installed on build runner)"
+  },
+  "verdict": {
+    "promoteExtension": false,
+    "retainPythonFallback": true,
+    "action": "Halt PyO3 Rust extension implementation; rely on worker process recycling and lazy dependency imports per L6 scorecard recommendations."
+  }
+}

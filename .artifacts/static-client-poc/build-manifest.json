@@ -1,0 +1,13 @@
+{
+  "buildTarget": "parallel-static-client-poc",
+  "timestamp": "2026-10-13T04:12:05.949Z",
+  "files": [
+    "index.html",
+    "env-config.js",
+    "spa-fallback.json",
+    "settings.html",
+    "models.html",
+    "podcasts.html"
+  ],
+  "nextStandaloneIntact": true
+}

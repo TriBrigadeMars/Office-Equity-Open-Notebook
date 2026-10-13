@@ -194,8 +194,14 @@ export function validatePerformanceBenchmarkResult(data: unknown): {
       'surrealDbBytes',
     ];
     for (const key of requiredSizeKeys) {
-      if (typeof sizes[key] !== 'number' || isNaN(sizes[key] as number) || (sizes[key] as number) <= 0) {
-        errors.push(`Invalid or missing artifact size metric: ${key} (must be a positive number)`);
+      if (key === 'nodeRuntimeBytes' || key === 'electronBytes') {
+        if (typeof sizes[key] !== 'number' || isNaN(sizes[key] as number) || (sizes[key] as number) < 0) {
+          errors.push(`Invalid or missing artifact size metric: ${key} (must be a non-negative number)`);
+        }
+      } else {
+        if (typeof sizes[key] !== 'number' || isNaN(sizes[key] as number) || (sizes[key] as number) <= 0) {
+          errors.push(`Invalid or missing artifact size metric: ${key} (must be a positive number)`);
+        }
       }
     }
   }

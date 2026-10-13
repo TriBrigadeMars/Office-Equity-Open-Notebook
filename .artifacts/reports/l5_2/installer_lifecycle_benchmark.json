@@ -1,0 +1,61 @@
+{
+  "timestamp": "2026-10-13T01:30:23.565Z",
+  "benchmarkResults": [
+    {
+      "variantId": "monolithic_full_nsis",
+      "name": "Monolithic Single-Binary Installer (NSIS)",
+      "category": "single_binary",
+      "installerSizeMb": 380,
+      "installedSizeMb": 685,
+      "installTimeSec": 42,
+      "upgradeTimeSec": 25,
+      "repairTimeSec": 17,
+      "uninstallTimeSec": 3,
+      "lifecyclePassRate": "6/6",
+      "offlineSupported": true,
+      "compositeScore": 57
+    },
+    {
+      "variantId": "core_minimal_nsis_addon",
+      "name": "Core Minimal Installer + Optional Addon Packages (NSIS)",
+      "category": "modular_light",
+      "installerSizeMb": 160,
+      "installedSizeMb": 320,
+      "installTimeSec": 18,
+      "upgradeTimeSec": 11,
+      "repairTimeSec": 7,
+      "uninstallTimeSec": 3,
+      "lifecyclePassRate": "6/6",
+      "offlineSupported": true,
+      "compositeScore": 86
+    },
+    {
+      "variantId": "web_bootstrapper_stub",
+      "name": "Web Bootstrapper Stub Installer",
+      "category": "bootstrapper",
+      "installerSizeMb": 15,
+      "installedSizeMb": 320,
+      "installTimeSec": 65,
+      "upgradeTimeSec": 39,
+      "repairTimeSec": 26,
+      "uninstallTimeSec": 3,
+      "lifecyclePassRate": "5/6",
+      "offlineSupported": false,
+      "compositeScore": 56
+    },
+    {
+      "variantId": "portable_zip_per_user",
+      "name": "Per-User Portable Directory / Archive",
+      "category": "portable",
+      "installerSizeMb": 180,
+      "installedSizeMb": 320,
+      "installTimeSec": 8,
+      "upgradeTimeSec": 5,
+      "repairTimeSec": 3,
+      "uninstallTimeSec": 3,
+      "lifecyclePassRate": "6/6",
+      "offlineSupported": true,
+      "compositeScore": 87
+    }
+  ]
+}

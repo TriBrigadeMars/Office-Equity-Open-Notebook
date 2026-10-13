@@ -105,7 +105,7 @@ app.whenReady().then(async () => {
   const required = [
     path.join(runtimePath, 'surreal', 'surreal.exe'),
     path.join(runtimePath, 'backend', 'open_notebook'),
-    path.join(runtimePath, 'frontend', 'server.js'),
+    path.join(runtimePath, 'frontend', 'static'),
   ];
   const missing = required.filter((p) => !fs.existsSync(p));
   if (missing.length > 0) {

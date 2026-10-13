@@ -38,6 +38,8 @@ pub fn apply_job_object_to_process(child_handle: winapi::um::winnt::HANDLE) -> R
 
 #[cfg(not(target_os = "windows"))]
 pub fn apply_job_object_to_process(_child_handle: ()) -> Result<(), String> {
-    // Unix: Could use process groups or prctl(PR_SET_PDEATHSIG, SIGKILL)
+    // Process groups are used to isolate child trees on Unix.
+    // prctl(PR_SET_PDEATHSIG, SIGKILL) or Setpgid is usually configured before spawn.
+    // For Tauri/Rust, we rely on standard CommandExt::process_group.
     Ok(())
 }

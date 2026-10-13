@@ -1,0 +1,237 @@
+{
+  "timestamp": "2026-10-11T09:15:00.000Z",
+  "packet": "L3.2",
+  "title": "API Proxy, Multipart Upload, and SSE Event Streaming Compatibility Fixtures",
+  "summary": {
+    "total_proxy_cases": 5,
+    "total_upload_cases": 3,
+    "total_sse_cases": 3,
+    "max_upload_size_bytes": 52428800,
+    "unbuffered_sse_required_headers": [
+      "content-type: text/event-stream",
+      "cache-control: no-cache",
+      "connection: keep-alive",
+      "x-accel-buffering: no"
+    ]
+  },
+  "proxyCases": [
+    {
+      "id": "PROXY_HEALTH_001",
+      "route": "/api/health",
+      "method": "GET",
+      "description": "Standard system health check proxied to FastAPI backend",
+      "requestHeaders": {
+        "accept": "application/json"
+      },
+      "expectedResponse": {
+        "statusCode": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body": {
+          "status": "ok",
+          "surrealdb": "connected",
+          "version": "1.14.0"
+        }
+      }
+    },
+    {
+      "id": "PROXY_NOTEBOOKS_001",
+      "route": "/api/notebooks",
+      "method": "GET",
+      "description": "Fetch notebook collection through API proxy",
+      "requestHeaders": {
+        "accept": "application/json"
+      },
+      "expectedResponse": {
+        "statusCode": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body": [
+          {
+            "id": "nb_default",
+            "name": "General Notebook",
+            "created_at": "2026-03-01T00:00:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "id": "PROXY_NOTES_CREATE_001",
+      "route": "/api/notes/create",
+      "method": "POST",
+      "description": "Create note mutation proxied with JSON payload",
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "expectedResponse": {
+        "statusCode": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body": {
+          "id": "note_202",
+          "title": "Executive Summary",
+          "status": "created"
+        }
+      }
+    },
+    {
+      "id": "PROXY_ERR_404",
+      "route": "/api/notebooks/nonexistent-id-999",
+      "method": "GET",
+      "description": "Proxy handling of 404 Not Found response from backend",
+      "requestHeaders": {
+        "accept": "application/json"
+      },
+      "expectedResponse": {
+        "statusCode": 404,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body": {
+          "detail": "Notebook not found"
+        }
+      }
+    },
+    {
+      "id": "PROXY_ERR_422",
+      "route": "/api/models/test",
+      "method": "POST",
+      "description": "Proxy handling of FastAPI validation error",
+      "requestHeaders": {
+        "content-type": "application/json"
+      },
+      "expectedResponse": {
+        "statusCode": 422,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body": {
+          "detail": [
+            {
+              "loc": ["body", "model_id"],
+              "msg": "field required",
+              "type": "value_error.missing"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "uploadCases": [
+    {
+      "id": "UPLOAD_PDF_001",
+      "route": "/api/sources/upload",
+      "method": "POST",
+      "description": "Standard multipart document upload pass-through",
+      "maxAllowedSizeBytes": 52428800,
+      "contentType": "multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW",
+      "filePart": {
+        "fieldName": "file",
+        "filename": "annual_report.pdf",
+        "mimeType": "application/pdf",
+        "sizeBytes": 2048
+      },
+      "expectedResponse": {
+        "statusCode": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body": {
+          "source_id": "src_881",
+          "filename": "annual_report.pdf",
+          "bytes": 2048,
+          "status": "uploaded"
+        }
+      }
+    },
+    {
+      "id": "UPLOAD_ERR_413_TOO_LARGE",
+      "route": "/api/sources/upload",
+      "method": "POST",
+      "description": "Payload exceeding maximum upload limit (50MB)",
+      "maxAllowedSizeBytes": 52428800,
+      "contentType": "multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW",
+      "filePart": {
+        "fieldName": "file",
+        "filename": "oversized_archive.zip",
+        "mimeType": "application/zip",
+        "sizeBytes": 104857600
+      },
+      "expectedResponse": {
+        "statusCode": 413,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body": {
+          "error": "Payload Too Large: File size exceeds maximum limit of 52428800 bytes"
+        }
+      }
+    },
+    {
+      "id": "UPLOAD_ERR_400_MISSING_FILE",
+      "route": "/api/sources/upload",
+      "method": "POST",
+      "description": "Multipart payload missing required file stream part",
+      "maxAllowedSizeBytes": 52428800,
+      "contentType": "multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW",
+      "filePart": null,
+      "expectedResponse": {
+        "statusCode": 400,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body": {
+          "error": "Bad Request: Missing required 'file' part in multipart payload"
+        }
+      }
+    }
+  ],
+  "sseCases": [
+    {
+      "id": "SSE_CHAT_STREAM_001",
+      "route": "/api/chat/stream",
+      "method": "POST",
+      "description": "Unbuffered chunked token streaming for LLM chat completion",
+      "requiredHeaders": {
+        "content-type": "text/event-stream",
+        "cache-control": "no-cache",
+        "connection": "keep-alive",
+        "x-accel-buffering": "no"
+      },
+      "maxAllowedLatencyMs": 100,
+      "maxInterFrameDelayMs": 50,
+      "chunksCount": 4
+    },
+    {
+      "id": "SSE_PODCAST_PROGRESS_001",
+      "route": "/api/podcasts/progress",
+      "method": "GET",
+      "description": "Podcast audio synthesis progress updates via SSE",
+      "requiredHeaders": {
+        "content-type": "text/event-stream",
+        "cache-control": "no-cache"
+      },
+      "maxAllowedLatencyMs": 150,
+      "maxInterFrameDelayMs": 100,
+      "chunksCount": 3
+    },
+    {
+      "id": "SSE_CLIENT_CANCEL_001",
+      "route": "/api/chat/stream",
+      "method": "POST",
+      "description": "Client disconnect triggers immediate upstream cancellation without hanging resources",
+      "requiredHeaders": {
+        "content-type": "text/event-stream",
+        "cache-control": "no-cache"
+      },
+      "expectedCancellation": {
+        "upstreamHalted": true,
+        "connectionClosedCleanly": true,
+        "memoryLeakDetected": false
+      }
+    }
+  ]
+}

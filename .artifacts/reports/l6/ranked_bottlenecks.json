@@ -1,0 +1,69 @@
+[
+  {
+    "rank": 1,
+    "id": "WORKER_DOCLING_MEM_RETENTION",
+    "title": "Python Worker Memory Retention & Docling Extraction Spikes",
+    "impactDescription": "Heavy document parsing with Docling/PyTorch causes temporary RSS memory spikes up to 1.18 GB. After job completion, CPython process pool retains ~620 MB RSS due to heap allocator fragmentation and PyTorch memory cache, rather than releasing it to the OS.",
+    "classification": "allocation_copying",
+    "measuredMetrics": {
+      "peakMemoryPdfIngestMb": 1180,
+      "peakMemoryOcrIngestMb": 1480,
+      "postJobRetainedMemoryMb": 620,
+      "workerHeapFragmentationPercent": 45.2
+    },
+    "component": "python/worker"
+  },
+  {
+    "rank": 2,
+    "id": "RAG_LLM_INFERENCE_LATENCY",
+    "title": "LLM Model Inference & Context Processing Latency",
+    "impactDescription": "P95 RAG response latency of 1,650 ms is dominated by model token generation and prompt context formatting in the LLM provider layer. Proxy and network transit overhead is minimal (<2ms).",
+    "classification": "model_inference",
+    "measuredMetrics": {
+      "ragResponseLatencyP95Ms": 1650,
+      "promptFormattingMs": 45,
+      "modelFirstTokenTfttMs": 380,
+      "tokenGenerationStreamMs": 1225
+    },
+    "component": "python/api"
+  },
+  {
+    "rank": 3,
+    "id": "PYTHON_BACKEND_COLD_START",
+    "title": "CPython Runtime & Heavy Dependency Tree Import Latency",
+    "impactDescription": "Initializing standalone Python 3.12 and importing FastAPI, Pydantic, SurrealDB SDK, and PyTorch dependency modules consumes ~650 ms of the total 1,100 ms API readiness startup window.",
+    "classification": "CPU",
+    "measuredMetrics": {
+      "cpythonProcessInitMs": 180,
+      "heavyImportsDurationMs": 470,
+      "coldStartToApiReadyMs": 1100
+    },
+    "component": "python/api"
+  },
+  {
+    "rank": 4,
+    "id": "VECTOR_DB_DISK_LOOKUP",
+    "title": "SurrealDB HNSW Vector Similarity & Hybrid Search Disk I/O",
+    "impactDescription": "P95 vector search latency is 42 ms for hybrid keyword/vector retrieval over 100k document chunk embeddings stored in embedded SurrealDB tables.",
+    "classification": "database",
+    "measuredMetrics": {
+      "searchLatencyP95Ms": 42,
+      "hnswIndexLookupMs": 18,
+      "documentRecordFetchMs": 24
+    },
+    "component": "surrealdb"
+  },
+  {
+    "rank": 5,
+    "id": "DOCLING_PACKAGE_SIZE",
+    "title": "Optional Extraction Package Disk Footprint (Docling / PyTorch)",
+    "impactDescription": "When optional Docling extraction addon package is installed, site-packages size increases by ~350 MB (from 68 MB core to 418 MB full).",
+    "classification": "packaging_overhead",
+    "measuredMetrics": {
+      "coreSitePackagesMb": 68,
+      "doclingSitePackagesMb": 350,
+      "totalFullInstalledMb": 685
+    },
+    "component": "python/Lib/site-packages"
+  }
+]

@@ -1,0 +1,365 @@
+{
+  "packetId": "L8.1",
+  "title": "L8.1: Audit Loopback Networking and Navigation Isolation Report",
+  "timestamp": "2026-10-13T04:12:04.040Z",
+  "socketBindAudit": {
+    "services": [
+      {
+        "serviceName": "surrealdb",
+        "expectedHost": "127.0.0.1",
+        "configuredHost": "127.0.0.1",
+        "port": 8000,
+        "boundToLoopbackOnly": true,
+        "status": "compliant",
+        "details": "SurrealDB process start arguments configured to bind strictly to 127.0.0.1:8000"
+      },
+      {
+        "serviceName": "api",
+        "expectedHost": "127.0.0.1",
+        "configuredHost": "127.0.0.1",
+        "port": 5055,
+        "boundToLoopbackOnly": true,
+        "status": "compliant",
+        "details": "FastAPI backend Uvicorn worker configured to bind strictly to 127.0.0.1:5055"
+      },
+      {
+        "serviceName": "frontend_native_proxy",
+        "expectedHost": "127.0.0.1",
+        "configuredHost": "127.0.0.1",
+        "port": 8502,
+        "boundToLoopbackOnly": true,
+        "status": "compliant",
+        "details": "Native Rust/Hyper embedded server listening strictly on 127.0.0.1:8502"
+      }
+    ],
+    "allServicesLoopbackOnly": true
+  },
+  "proxySecurityAudit": {
+    "targetPinningCases": [
+      {
+        "id": "PROXY_TARGET_1",
+        "targetUrl": "http://127.0.0.1:5055",
+        "allowed": true,
+        "statusCode": 200,
+        "reason": "Target permitted by loopback proxy",
+        "passed": true
+      },
+      {
+        "id": "PROXY_TARGET_2",
+        "targetUrl": "http://127.0.0.1:5055/api/health",
+        "allowed": true,
+        "statusCode": 200,
+        "reason": "Target permitted by loopback proxy",
+        "passed": true
+      },
+      {
+        "id": "PROXY_TARGET_3",
+        "targetUrl": "http://127.0.0.1:5055.evil.com",
+        "allowed": false,
+        "statusCode": 502,
+        "reason": "Target rejected by loopback pin rule",
+        "passed": true
+      },
+      {
+        "id": "PROXY_TARGET_4",
+        "targetUrl": "http://127.0.0.1:5055@evil.com",
+        "allowed": false,
+        "statusCode": 502,
+        "reason": "Target rejected by loopback pin rule",
+        "passed": true
+      },
+      {
+        "id": "PROXY_TARGET_5",
+        "targetUrl": "http://192.168.1.1:5055",
+        "allowed": false,
+        "statusCode": 502,
+        "reason": "Target rejected by loopback pin rule",
+        "passed": true
+      },
+      {
+        "id": "PROXY_TARGET_6",
+        "targetUrl": "http://example.com",
+        "allowed": false,
+        "statusCode": 502,
+        "reason": "Target rejected by loopback pin rule",
+        "passed": true
+      }
+    ],
+    "headerInjectionCases": [
+      {
+        "id": "PROXY_HEADER_1",
+        "headerName": "Host",
+        "headerValue": "evil.com",
+        "safe": true,
+        "reason": "Header safely handled/stripped by reverse proxy layer",
+        "passed": true
+      },
+      {
+        "id": "PROXY_HEADER_2",
+        "headerName": "X-Forwarded-Host",
+        "headerValue": "attacker.org",
+        "safe": true,
+        "reason": "Header safely handled/stripped by reverse proxy layer",
+        "passed": true
+      },
+      {
+        "id": "PROXY_HEADER_3",
+        "headerName": "Host",
+        "headerValue": "127.0.0.1:5055",
+        "safe": true,
+        "reason": "Header safely handled/stripped by reverse proxy layer",
+        "passed": true
+      },
+      {
+        "id": "PROXY_HEADER_4",
+        "headerName": "Host",
+        "headerValue": "evil.com\r\nX-Injected: 1",
+        "safe": true,
+        "reason": "Header safely handled/stripped by reverse proxy layer",
+        "passed": true
+      }
+    ],
+    "pathTraversalCases": [
+      {
+        "id": "PATH_SECURITY_1",
+        "requestedPath": "../etc/passwd",
+        "isSafe": false,
+        "reason": "Path traversal sequence detected",
+        "passed": true
+      },
+      {
+        "id": "PATH_SECURITY_2",
+        "requestedPath": "..%2f..%2fetc%2fpasswd",
+        "isSafe": false,
+        "reason": "Path traversal sequence detected",
+        "passed": true
+      },
+      {
+        "id": "PATH_SECURITY_3",
+        "requestedPath": "%252e%252e%252fetc%252fpasswd",
+        "isSafe": false,
+        "reason": "Path traversal sequence detected",
+        "passed": true
+      },
+      {
+        "id": "PATH_SECURITY_4",
+        "requestedPath": "/static/\u0000secret.txt",
+        "isSafe": false,
+        "reason": "Path traversal sequence detected",
+        "passed": true
+      },
+      {
+        "id": "PATH_SECURITY_5",
+        "requestedPath": "..\\Windows\\System32",
+        "isSafe": false,
+        "reason": "Path traversal sequence detected",
+        "passed": true
+      },
+      {
+        "id": "PATH_SECURITY_6",
+        "requestedPath": "/assets/logo.png",
+        "isSafe": true,
+        "canonicalPath": "/var/www/static/assets/logo.png",
+        "reason": "Path inside root",
+        "passed": true
+      },
+      {
+        "id": "PATH_SECURITY_7",
+        "requestedPath": "/notebooks/nb-101",
+        "isSafe": true,
+        "canonicalPath": "/var/www/static/notebooks/nb-101",
+        "reason": "Path inside root",
+        "passed": true
+      }
+    ],
+    "allProxyChecksPassed": true
+  },
+  "navigationSecurityAudit": {
+    "cases": [
+      {
+        "id": "NAV_POLICY_1",
+        "inputUrl": "http://127.0.0.1:8502",
+        "expectedAction": "allow",
+        "actualAction": "allow",
+        "category": "internal_origin",
+        "passed": true,
+        "reason": "Internal navigation within frontend application"
+      },
+      {
+        "id": "NAV_POLICY_2",
+        "inputUrl": "http://127.0.0.1:8502/notebooks/123",
+        "expectedAction": "allow",
+        "actualAction": "allow",
+        "category": "deep_link",
+        "passed": true,
+        "reason": "Internal navigation within frontend application"
+      },
+      {
+        "id": "NAV_POLICY_3",
+        "inputUrl": "http://127.0.0.1:8502/settings?tab=general",
+        "expectedAction": "allow",
+        "actualAction": "allow",
+        "category": "deep_link",
+        "passed": true,
+        "reason": "Internal navigation within frontend application"
+      },
+      {
+        "id": "NAV_POLICY_4",
+        "inputUrl": "HTTP://127.0.0.1:8502/dashboard",
+        "expectedAction": "allow",
+        "actualAction": "allow",
+        "category": "case_variant",
+        "passed": true,
+        "reason": "Internal navigation within frontend application"
+      },
+      {
+        "id": "NAV_POLICY_5",
+        "inputUrl": "http://127.0.0.1:8502@evil.com/",
+        "expectedAction": "external",
+        "actualAction": "external",
+        "category": "user_info_trick",
+        "passed": true,
+        "reason": "External HTTP(S) link delegated to OS browser"
+      },
+      {
+        "id": "NAV_POLICY_6",
+        "inputUrl": "http://user:pass@127.0.0.1:8502/",
+        "expectedAction": "external",
+        "actualAction": "external",
+        "category": "user_info_trick",
+        "passed": true,
+        "reason": "External HTTP(S) link delegated to OS browser"
+      },
+      {
+        "id": "NAV_POLICY_7",
+        "inputUrl": "http://127.0.0.1:8502.evil.com/",
+        "expectedAction": "external",
+        "actualAction": "external",
+        "category": "domain_prefix_trick",
+        "passed": true,
+        "reason": "External HTTP(S) link delegated to OS browser"
+      },
+      {
+        "id": "NAV_POLICY_8",
+        "inputUrl": "file:///etc/passwd",
+        "expectedAction": "deny",
+        "actualAction": "deny",
+        "category": "alternate_scheme",
+        "passed": true,
+        "reason": "Unsupported or untrusted protocol"
+      },
+      {
+        "id": "NAV_POLICY_9",
+        "inputUrl": "file://C:/Windows/System32",
+        "expectedAction": "deny",
+        "actualAction": "deny",
+        "category": "alternate_scheme",
+        "passed": true,
+        "reason": "Unsupported or untrusted protocol"
+      },
+      {
+        "id": "NAV_POLICY_10",
+        "inputUrl": "javascript:alert(1)",
+        "expectedAction": "deny",
+        "actualAction": "deny",
+        "category": "alternate_scheme",
+        "passed": true,
+        "reason": "Unsupported or untrusted protocol"
+      },
+      {
+        "id": "NAV_POLICY_11",
+        "inputUrl": "data:text/html,<script>alert(1)</script>",
+        "expectedAction": "deny",
+        "actualAction": "deny",
+        "category": "alternate_scheme",
+        "passed": true,
+        "reason": "Unsupported or untrusted protocol"
+      },
+      {
+        "id": "NAV_POLICY_12",
+        "inputUrl": "custom://app/action",
+        "expectedAction": "deny",
+        "actualAction": "deny",
+        "category": "alternate_scheme",
+        "passed": true,
+        "reason": "Unsupported or untrusted protocol"
+      },
+      {
+        "id": "NAV_POLICY_13",
+        "inputUrl": "http://example.com",
+        "expectedAction": "external",
+        "actualAction": "external",
+        "category": "external_http",
+        "passed": true,
+        "reason": "External HTTP(S) link delegated to OS browser"
+      },
+      {
+        "id": "NAV_POLICY_14",
+        "inputUrl": "https://google.com/search?q=opennotebook",
+        "expectedAction": "external",
+        "actualAction": "external",
+        "category": "external_http",
+        "passed": true,
+        "reason": "External HTTP(S) link delegated to OS browser"
+      },
+      {
+        "id": "NAV_POLICY_15",
+        "inputUrl": "not-a-valid-url-string",
+        "expectedAction": "deny",
+        "actualAction": "deny",
+        "category": "malformed",
+        "passed": true,
+        "reason": "Unsupported or untrusted protocol"
+      }
+    ],
+    "allNavigationChecksPassed": true
+  },
+  "fuzzSuiteAudit": {
+    "suites": [
+      {
+        "category": "url_fuzz",
+        "iterations": 200,
+        "failures": 0,
+        "passed": true,
+        "sampleErrors": []
+      },
+      {
+        "category": "path_fuzz",
+        "iterations": 200,
+        "failures": 0,
+        "passed": true,
+        "sampleErrors": []
+      },
+      {
+        "category": "header_fuzz",
+        "iterations": 100,
+        "failures": 0,
+        "passed": true,
+        "sampleErrors": []
+      }
+    ],
+    "allFuzzPassed": true
+  },
+  "findings": [
+    {
+      "id": "FINDING_L8_1_01",
+      "severity": "high",
+      "title": "Rust Tauri Navigation Policy Weak Prefix Matching",
+      "status": "resolved",
+      "description": "In src-tauri/src/security.rs, url.as_str().starts_with(\"http://127.0.0.1:8502\") allowed subdomains/userinfo authority tricks like http://127.0.0.1:8502.evil.com or http://127.0.0.1:8502@evil.com.",
+      "remediation": "Updated src-tauri/src/security.rs and evaluateNavigationPolicy to parse URLs with strict scheme (\"http\"), host (\"127.0.0.1\"), port (8502), and empty userinfo."
+    },
+    {
+      "id": "FINDING_L8_1_02",
+      "severity": "medium",
+      "title": "Double URL-Encoded Path Traversal Evasion Protection",
+      "status": "resolved",
+      "description": "Static asset path traversal check required explicit defense against double URL-encoded sequences (%252e%252e) and null bytes (%00).",
+      "remediation": "Enhanced validatePathTraversal in src/contracts/native-proxy.ts to detect double encoding and null bytes before path resolution."
+    }
+  ],
+  "verdict": {
+    "fullyCompliant": true,
+    "summary": "All services bound strictly to 127.0.0.1 loopback; proxy target pinned to 127.0.0.1:5055; path traversal protections active; WebView navigation policy isolated; fuzzing tests 100% passed."
+  }
+}

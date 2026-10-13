@@ -72,23 +72,20 @@ function main() {
   const shortRoot = path.join('C:\\onb', `build-${process.pid}-${Date.now()}`);
   const shortAppRequired = path.join(shortRoot, 'OpenNotebook-required');
   const shortAppPython = path.join(shortRoot, 'OpenNotebook-python');
-  const shortAppNode = path.join(shortRoot, 'OpenNotebook-node');
   const scriptPath = path.join(shortRoot, 'installer.nsi');
 
   try {
-    // Stage three component directories:
-    //  - required: everything except the bundled Python and Node runtimes
+    // Stage two component directories:
+    //  - required: everything except the bundled Python runtime
     //  - python:   resources/runtime/python
-    //  - node:     resources/runtime/node
     // Using robocopy /XD avoids fragile cross-directory moves on Windows.
     console.log(`Staging installer components in ${shortRoot}...`);
     fs.mkdirSync(shortRoot, { recursive: true });
 
-    runRobocopy([APP_DIR, shortAppRequired, '/E', '/MT:16', '/XD', 'python', 'node', '/NFL', '/NDL', '/NJH', '/NJS']);
+    runRobocopy([APP_DIR, shortAppRequired, '/E', '/MT:16', '/XD', 'python', '/NFL', '/NDL', '/NJH', '/NJS']);
     runRobocopy([path.join(APP_DIR, 'resources', 'runtime', 'python'), path.join(shortAppPython, 'python'), '/E', '/MT:16', '/NFL', '/NDL', '/NJH', '/NJS']);
-    runRobocopy([path.join(APP_DIR, 'resources', 'runtime', 'node'), path.join(shortAppNode, 'node'), '/E', '/MT:16', '/NFL', '/NDL', '/NJH', '/NJS']);
 
-    // Write the NSIS script with optional components for Python and Node.
+    // Write the NSIS script with optional component for Python.
     const installerPath = path.join(DIST_DIR, INSTALLER_NAME);
     fs.mkdirSync(DIST_DIR, { recursive: true });
     const nsisInstallerPath = installerPath.replace(/\\/g, '\\\\').replace(/"/g, '$\\"');
@@ -129,11 +126,6 @@ SectionEnd
 Section "Python 3.12 runtime" SecPython
   SetOutPath "$INSTDIR\\resources\\runtime"
   File /r "OpenNotebook-python\\*"
-SectionEnd
-
-Section "Node.js runtime" SecNode
-  SetOutPath "$INSTDIR\\resources\\runtime"
-  File /r "OpenNotebook-node\\*"
 SectionEnd
 
 Section "Uninstall"

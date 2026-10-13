@@ -6,6 +6,7 @@
  */
 
 import net from 'net';
+import http from 'http';
 import {
   ServicePorts,
   ServiceName,
@@ -34,6 +35,27 @@ export function isPortOpen(port: number, host = '127.0.0.1'): Promise<boolean> {
   });
 }
 
+export function isHttpReady(url: string, timeoutMs: number = 1000): Promise<boolean> {
+  return new Promise((resolve) => {
+    const req = http.get(url, (res) => {
+      // Consume response data to free up memory
+      res.on('data', () => {});
+      res.on('end', () => {
+        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 500) {
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      });
+    });
+    req.on('error', () => resolve(false));
+    req.setTimeout(timeoutMs, () => {
+      req.destroy();
+      resolve(false);
+    });
+  });
+}
+
 export function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -51,6 +73,19 @@ export async function waitForPort(
     await sleep(500);
   }
   throw new Error(`Timed out waiting for ${label} on port ${port}`);
+}
+
+export async function waitForHttp(
+  url: string,
+  timeoutMs = 60000,
+  label: string = url
+): Promise<boolean> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    if (await isHttpReady(url)) return true;
+    await sleep(500);
+  }
+  throw new Error(`Timed out waiting for HTTP readiness for ${label} at ${url}`);
 }
 
 export function formatLogLine(

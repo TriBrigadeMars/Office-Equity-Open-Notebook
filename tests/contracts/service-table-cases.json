@@ -38,17 +38,6 @@
           "readinessPolicy": {
             "type": "process"
           }
-        },
-        {
-          "name": "frontend",
-          "command": "node.exe",
-          "args": ["server.js"],
-          "readinessPolicy": {
-            "type": "port",
-            "port": 8502,
-            "timeoutMs": 120000,
-            "label": "Frontend"
-          }
         }
       ]
     }

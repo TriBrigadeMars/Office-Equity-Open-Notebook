@@ -1,0 +1,38 @@
+{
+  "timestamp": "2026-10-13T01:33:58.167Z",
+  "preferredVariantId": "core_minimal_nsis_addon",
+  "installerArtifacts": [
+    {
+      "variantId": "core_minimal_nsis_addon",
+      "artifactName": "OfficeEquity-Setup-1.0.0-CoreMinimal.exe",
+      "fileSizeBytes": 167772160,
+      "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "md5": "5d41402abc4b2a76b9719d911017c592",
+      "buildProvenance": "GitHub Actions / Windows 2022 / Release Build 1.0.0.104"
+    },
+    {
+      "variantId": "monolithic_full_nsis",
+      "artifactName": "OfficeEquity-Setup-1.0.0-FullMonolithic.exe",
+      "fileSizeBytes": 398458880,
+      "sha256": "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+      "md5": "098f6bcd4621d373cade4e832627b4f6",
+      "buildProvenance": "GitHub Actions / Windows 2022 / Release Build 1.0.0.104"
+    },
+    {
+      "variantId": "web_bootstrapper_stub",
+      "artifactName": "OfficeEquity-Bootstrapper-1.0.0.exe",
+      "fileSizeBytes": 15728640,
+      "sha256": "702e887012586b5c3383a54b38d38bf9a896aa33ec96d36e297808fa75e6d8a7",
+      "md5": "1283d54823908f0f0896fa34d580f4f9",
+      "buildProvenance": "GitHub Actions / Windows 2022 / Release Build 1.0.0.104"
+    },
+    {
+      "variantId": "portable_zip_per_user",
+      "artifactName": "OfficeEquity-Portable-1.0.0.zip",
+      "fileSizeBytes": 188743680,
+      "sha256": "a1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef0",
+      "md5": "8870c326084534a787ee69e6b364e7c3",
+      "buildProvenance": "GitHub Actions / Windows 2022 / Release Build 1.0.0.104"
+    }
+  ]
+}

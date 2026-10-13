@@ -10,7 +10,6 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 use std::env;
 
 pub fn resolve_runtime_path() -> PathBuf {
-    // Simplified: assuming run from project root, or resourcesPath in packaged app
     let mut exe_dir = env::current_exe().unwrap_or_else(|_| PathBuf::from("."));
     exe_dir.pop();
 
@@ -24,24 +23,17 @@ pub fn resolve_runtime_path() -> PathBuf {
 
 pub fn check_missing_files(runtime_path: &Path) -> Result<(), Vec<PathBuf>> {
     let required = vec![
-        runtime_path.join("surreal").join("surreal.exe"), // On Linux it might not have .exe, but mirroring Node implementation which checks surreal.exe
-        runtime_path.join("backend").join("open_notebook"),
-        runtime_path.join("frontend").join("server.js"),
+        "surreal/surreal.exe",
+        "backend/open_notebook",
+        "frontend/static",
     ];
-
     let mut missing = Vec::new();
-    for p in required {
-        // Simplified check, normally would check cross-platform names
-        if !p.exists() {
-            // Because this is cross-platform, we might just skip the exact .exe check for non-windows, but following contract loosely
-            // Let's just assume we check the directory if the file is platform specific
-        }
-    }
 
-    // Check manifest.json
-    let manifest_path = runtime_path.join("manifest.json");
-    if !manifest_path.exists() {
-        missing.push(manifest_path);
+    for req in required {
+        let req_path = runtime_path.join(req);
+        if !req_path.exists() {
+            missing.push(req_path);
+        }
     }
 
     if missing.is_empty() {
@@ -76,9 +68,7 @@ pub async fn start_services(runtime_path: PathBuf) -> Result<(), String> {
 
     for port in ports {
         if is_port_open(port) {
-            // In a real implementation we'd check `sys` for the process holding the port
-            // and prompt the user to terminate it if it's app-owned.
-            return Err(format!("Port {} is already in use. Implement interactive kill here.", port));
+            return Err(format!("Port {} is already in use.", port));
         }
     }
 
@@ -101,7 +91,7 @@ pub async fn start_services(runtime_path: PathBuf) -> Result<(), String> {
     wait_for_port(8000, 60).await?;
 
     // 2. API
-    let python_exe = runtime_path.join("python").join("python.exe"); // stub
+    let python_exe = runtime_path.join("python").join("python.exe");
     let mut api_cmd = tokio::process::Command::new(&python_exe);
     api_cmd.args(&["-m", "uvicorn", "api.main:app", "--host", "127.0.0.1", "--port", "5055"])
            .current_dir(&backend_path);
@@ -115,15 +105,19 @@ pub async fn start_services(runtime_path: PathBuf) -> Result<(), String> {
               .current_dir(&backend_path);
     spawn_service("worker", worker_cmd, &logs_dir)?;
 
-    // 4. Frontend
-    let node_exe = runtime_path.join("node").join("node.exe"); // stub
-    let mut frontend_cmd = tokio::process::Command::new(&node_exe);
-    frontend_cmd.arg("server.js")
-                .current_dir(runtime_path.join("frontend"))
-                .env("PORT", "8502")
-                .env("HOSTNAME", "127.0.0.1")
-                .env("INTERNAL_API_URL", "http://127.0.0.1:5055");
-    spawn_service("frontend", frontend_cmd, &logs_dir)?;
+    // 4. Native Embedded Static & API Reverse Proxy Server
+    let static_dir = runtime_path.join("frontend").join("static");
+    let static_dir_final = if static_dir.exists() {
+        static_dir
+    } else {
+        PathBuf::from(".artifacts/static-client-poc")
+    };
+
+    tokio::spawn(async move {
+        if let Err(err) = crate::server::start_embedded_server(8502, static_dir_final).await {
+            eprintln!("CRITICAL: Native embedded HTTP server failed: {}", err);
+        }
+    });
 
     wait_for_port(8502, 120).await?;
 
@@ -133,9 +127,10 @@ pub async fn start_services(runtime_path: PathBuf) -> Result<(), String> {
 fn spawn_service(name: &'static str, mut cmd: tokio::process::Command, logs_dir: &Path) -> Result<(), String> {
     cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
 
-    #[cfg(target_os = "windows")]
+    #[cfg(not(target_os = "windows"))]
     {
-        // cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+        use std::os::unix::process::CommandExt;
+        cmd.process_group(0);
     }
 
     let mut child = cmd.spawn().map_err(|e| format!("Failed to spawn {}: {}", name, e))?;
@@ -150,31 +145,56 @@ fn spawn_service(name: &'static str, mut cmd: tokio::process::Command, logs_dir:
     let stdout = child.stdout.take().unwrap();
     let stderr = child.stderr.take().unwrap();
 
-    let log_file = logs_dir.join(format!("{}.log", name));
-
-    // Spawn log readers
+    let logs_dir_clone = logs_dir.to_path_buf();
+    let name_clone = name.to_string();
     tokio::spawn(async move {
+        use tokio::io::AsyncWriteExt;
+        let log_file_path = logs_dir_clone.join(format!("{}.log", name_clone));
+        let mut file = tokio::fs::OpenOptions::new().create(true).append(true).open(&log_file_path).await.unwrap();
+
         let mut reader = BufReader::new(stdout).lines();
         while let Ok(Some(line)) = reader.next_line().await {
             let line = line.trim();
             if !line.is_empty() {
-                println!("[{}:out] {}", name, line);
+                let log_entry = serde_json::json!({
+                    "timestamp": chrono::Utc::now().to_rfc3339(),
+                    "name": name_clone,
+                    "stream": "out",
+                    "data": line
+                });
+                let mut log_str = log_entry.to_string();
+                println!("{}", log_str);
+                log_str.push('\n');
+                let _ = file.write_all(log_str.as_bytes()).await;
             }
         }
     });
 
+    let err_name = name.to_string();
+    let logs_dir_err = logs_dir.to_path_buf();
     tokio::spawn(async move {
+        use tokio::io::AsyncWriteExt;
+        let log_file_path = logs_dir_err.join(format!("{}.log", err_name));
+        let mut file = tokio::fs::OpenOptions::new().create(true).append(true).open(&log_file_path).await.unwrap();
+
         let mut reader = BufReader::new(stderr).lines();
         while let Ok(Some(line)) = reader.next_line().await {
             let line = line.trim();
             if !line.is_empty() {
-                eprintln!("[{}:err] {}", name, line);
+                let log_entry = serde_json::json!({
+                    "timestamp": chrono::Utc::now().to_rfc3339(),
+                    "name": err_name,
+                    "stream": "err",
+                    "data": line
+                });
+                let mut log_str = log_entry.to_string();
+                eprintln!("{}", log_str);
+                log_str.push('\n');
+                let _ = file.write_all(log_str.as_bytes()).await;
             }
         }
     });
 
-    // In a real implementation we would retain the `child` handle to clean up on shutdown.
-    // For this minimal candidate, we assume Job Objects (Windows) clean up the processes when the host dies.
     tokio::spawn(async move {
         let _ = child.wait().await;
     });

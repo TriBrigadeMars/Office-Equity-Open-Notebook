@@ -1,0 +1,354 @@
+{
+  "timestamp": "2026-10-13T01:30:23.565Z",
+  "variants": {
+    "monolithic_full_nsis": {
+      "variantId": "monolithic_full_nsis",
+      "name": "Monolithic Single-Binary Installer (NSIS)",
+      "category": "single_binary",
+      "installerSizeBytes": 398458880,
+      "installedSizeBytes": 718274560,
+      "installDurationSec": 42,
+      "upgradeDurationSec": 25,
+      "repairDurationSec": 17,
+      "uninstallDurationSec": 3,
+      "lifecycleChecksCount": 6,
+      "lifecycleChecksPassed": 6,
+      "offlineSupported": true,
+      "score": 57,
+      "lifecycleChecks": [
+        {
+          "id": "monolithic_full_nsis_clean_install",
+          "action": "clean_install",
+          "description": "Fresh clean installation to target installation directory",
+          "passed": true,
+          "durationMs": 4200,
+          "preservedUserData": true,
+          "createdShortcuts": true,
+          "registeredUninstaller": true,
+          "verifiedFileHashes": true
+        },
+        {
+          "id": "monolithic_full_nsis_upgrade",
+          "action": "upgrade",
+          "description": "In-place upgrade from previous release version preserving user data",
+          "passed": true,
+          "durationMs": 2520,
+          "preservedUserData": true,
+          "createdShortcuts": true,
+          "registeredUninstaller": true,
+          "verifiedFileHashes": true
+        },
+        {
+          "id": "monolithic_full_nsis_repair_reinstall",
+          "action": "repair_reinstall",
+          "description": "Component manifest verification and missing file restoration",
+          "passed": true,
+          "durationMs": 1680,
+          "preservedUserData": true,
+          "createdShortcuts": true,
+          "registeredUninstaller": true,
+          "verifiedFileHashes": true
+        },
+        {
+          "id": "monolithic_full_nsis_uninstall",
+          "action": "uninstall",
+          "description": "Clean removal of binaries and shortcuts while preserving AppData user databases",
+          "passed": true,
+          "durationMs": 2500,
+          "preservedUserData": true,
+          "createdShortcuts": false,
+          "registeredUninstaller": false,
+          "verifiedFileHashes": true
+        },
+        {
+          "id": "monolithic_full_nsis_offline_install",
+          "action": "offline_install",
+          "description": "Verification of installation capabilities without network connectivity",
+          "passed": true,
+          "durationMs": 3360,
+          "preservedUserData": true,
+          "createdShortcuts": true,
+          "registeredUninstaller": true,
+          "verifiedFileHashes": true
+        },
+        {
+          "id": "monolithic_full_nsis_missing_webview2",
+          "action": "missing_webview2",
+          "description": "Handling of missing system WebView2 runtime and fallback execution",
+          "passed": true,
+          "durationMs": 300,
+          "preservedUserData": true,
+          "createdShortcuts": true,
+          "registeredUninstaller": true,
+          "verifiedFileHashes": true
+        }
+      ]
+    },
+    "core_minimal_nsis_addon": {
+      "variantId": "core_minimal_nsis_addon",
+      "name": "Core Minimal Installer + Optional Addon Packages (NSIS)",
+      "category": "modular_light",
+      "installerSizeBytes": 167772160,
+      "installedSizeBytes": 335544320,
+      "installDurationSec": 18,
+      "upgradeDurationSec": 11,
+      "repairDurationSec": 7,
+      "uninstallDurationSec": 3,
+      "lifecycleChecksCount": 6,
+      "lifecycleChecksPassed": 6,
+      "offlineSupported": true,
+      "score": 86,
+      "lifecycleChecks": [
+        {
+          "id": "core_minimal_nsis_addon_clean_install",
+          "action": "clean_install",
+          "description": "Fresh clean installation to target installation directory",
+          "passed": true,
+          "durationMs": 1800,
+          "preservedUserData": true,
+          "createdShortcuts": true,
+          "registeredUninstaller": true,
+          "verifiedFileHashes": true
+        },
+        {
+          "id": "core_minimal_nsis_addon_upgrade",
+          "action": "upgrade",
+          "description": "In-place upgrade from previous release version preserving user data",
+          "passed": true,
+          "durationMs": 1080,
+          "preservedUserData": true,
+          "createdShortcuts": true,
+          "registeredUninstaller": true,
+          "verifiedFileHashes": true
+        },
+        {
+          "id": "core_minimal_nsis_addon_repair_reinstall",
+          "action": "repair_reinstall",
+          "description": "Component manifest verification and missing file restoration",
+          "passed": true,
+          "durationMs": 720,
+          "preservedUserData": true,
+          "createdShortcuts": true,
+          "registeredUninstaller": true,
+          "verifiedFileHashes": true
+        },
+        {
+          "id": "core_minimal_nsis_addon_uninstall",
+          "action": "uninstall",
+          "description": "Clean removal of binaries and shortcuts while preserving AppData user databases",
+          "passed": true,
+          "durationMs": 2500,
+          "preservedUserData": true,
+          "createdShortcuts": false,
+          "registeredUninstaller": false,
+          "verifiedFileHashes": true
+        },
+        {
+          "id": "core_minimal_nsis_addon_offline_install",
+          "action": "offline_install",
+          "description": "Verification of installation capabilities without network connectivity",
+          "passed": true,
+          "durationMs": 1440,
+          "preservedUserData": true,
+          "createdShortcuts": true,
+          "registeredUninstaller": true,
+          "verifiedFileHashes": true
+        },
+        {
+          "id": "core_minimal_nsis_addon_missing_webview2",
+          "action": "missing_webview2",
+          "description": "Handling of missing system WebView2 runtime and fallback execution",
+          "passed": true,
+          "durationMs": 300,
+          "preservedUserData": true,
+          "createdShortcuts": true,
+          "registeredUninstaller": true,
+          "verifiedFileHashes": true
+        }
+      ]
+    },
+    "web_bootstrapper_stub": {
+      "variantId": "web_bootstrapper_stub",
+      "name": "Web Bootstrapper Stub Installer",
+      "category": "bootstrapper",
+      "installerSizeBytes": 15728640,
+      "installedSizeBytes": 335544320,
+      "installDurationSec": 65,
+      "upgradeDurationSec": 39,
+      "repairDurationSec": 26,
+      "uninstallDurationSec": 3,
+      "lifecycleChecksCount": 6,
+      "lifecycleChecksPassed": 5,
+      "offlineSupported": false,
+      "score": 56,
+      "lifecycleChecks": [
+        {
+          "id": "web_bootstrapper_stub_clean_install",
+          "action": "clean_install",
+          "description": "Fresh clean installation to target installation directory",
+          "passed": true,
+          "durationMs": 6500,
+          "preservedUserData": true,
+          "createdShortcuts": true,
+          "registeredUninstaller": true,
+          "verifiedFileHashes": true
+        },
+        {
+          "id": "web_bootstrapper_stub_upgrade",
+          "action": "upgrade",
+          "description": "In-place upgrade from previous release version preserving user data",
+          "passed": true,
+          "durationMs": 3900,
+          "preservedUserData": true,
+          "createdShortcuts": true,
+          "registeredUninstaller": true,
+          "verifiedFileHashes": true
+        },
+        {
+          "id": "web_bootstrapper_stub_repair_reinstall",
+          "action": "repair_reinstall",
+          "description": "Component manifest verification and missing file restoration",
+          "passed": true,
+          "durationMs": 2600,
+          "preservedUserData": true,
+          "createdShortcuts": true,
+          "registeredUninstaller": true,
+          "verifiedFileHashes": true
+        },
+        {
+          "id": "web_bootstrapper_stub_uninstall",
+          "action": "uninstall",
+          "description": "Clean removal of binaries and shortcuts while preserving AppData user databases",
+          "passed": true,
+          "durationMs": 2500,
+          "preservedUserData": true,
+          "createdShortcuts": false,
+          "registeredUninstaller": false,
+          "verifiedFileHashes": true
+        },
+        {
+          "id": "web_bootstrapper_stub_offline_install",
+          "action": "offline_install",
+          "description": "Verification of installation capabilities without network connectivity",
+          "passed": false,
+          "durationMs": 500,
+          "preservedUserData": true,
+          "createdShortcuts": false,
+          "registeredUninstaller": false,
+          "verifiedFileHashes": false,
+          "error": "Variant requires active internet connection for web stub download"
+        },
+        {
+          "id": "web_bootstrapper_stub_missing_webview2",
+          "action": "missing_webview2",
+          "description": "Handling of missing system WebView2 runtime and fallback execution",
+          "passed": true,
+          "durationMs": 300,
+          "preservedUserData": true,
+          "createdShortcuts": true,
+          "registeredUninstaller": true,
+          "verifiedFileHashes": true
+        }
+      ]
+    },
+    "portable_zip_per_user": {
+      "variantId": "portable_zip_per_user",
+      "name": "Per-User Portable Directory / Archive",
+      "category": "portable",
+      "installerSizeBytes": 188743680,
+      "installedSizeBytes": 335544320,
+      "installDurationSec": 8,
+      "upgradeDurationSec": 5,
+      "repairDurationSec": 3,
+      "uninstallDurationSec": 3,
+      "lifecycleChecksCount": 6,
+      "lifecycleChecksPassed": 6,
+      "offlineSupported": true,
+      "score": 87,
+      "lifecycleChecks": [
+        {
+          "id": "portable_zip_per_user_clean_install",
+          "action": "clean_install",
+          "description": "Fresh clean installation to target installation directory",
+          "passed": true,
+          "durationMs": 800,
+          "preservedUserData": true,
+          "createdShortcuts": false,
+          "registeredUninstaller": false,
+          "verifiedFileHashes": true
+        },
+        {
+          "id": "portable_zip_per_user_upgrade",
+          "action": "upgrade",
+          "description": "In-place upgrade from previous release version preserving user data",
+          "passed": true,
+          "durationMs": 480,
+          "preservedUserData": true,
+          "createdShortcuts": false,
+          "registeredUninstaller": false,
+          "verifiedFileHashes": true
+        },
+        {
+          "id": "portable_zip_per_user_repair_reinstall",
+          "action": "repair_reinstall",
+          "description": "Component manifest verification and missing file restoration",
+          "passed": true,
+          "durationMs": 320,
+          "preservedUserData": true,
+          "createdShortcuts": false,
+          "registeredUninstaller": false,
+          "verifiedFileHashes": true
+        },
+        {
+          "id": "portable_zip_per_user_uninstall",
+          "action": "uninstall",
+          "description": "Clean removal of binaries and shortcuts while preserving AppData user databases",
+          "passed": true,
+          "durationMs": 2500,
+          "preservedUserData": true,
+          "createdShortcuts": false,
+          "registeredUninstaller": false,
+          "verifiedFileHashes": true
+        },
+        {
+          "id": "portable_zip_per_user_offline_install",
+          "action": "offline_install",
+          "description": "Verification of installation capabilities without network connectivity",
+          "passed": true,
+          "durationMs": 640,
+          "preservedUserData": true,
+          "createdShortcuts": false,
+          "registeredUninstaller": false,
+          "verifiedFileHashes": true
+        },
+        {
+          "id": "portable_zip_per_user_missing_webview2",
+          "action": "missing_webview2",
+          "description": "Handling of missing system WebView2 runtime and fallback execution",
+          "passed": true,
+          "durationMs": 300,
+          "preservedUserData": true,
+          "createdShortcuts": true,
+          "registeredUninstaller": true,
+          "verifiedFileHashes": true
+        }
+      ]
+    }
+  },
+  "preferredVariantId": "core_minimal_nsis_addon",
+  "preferredVariantName": "Core Minimal Installer + Optional Addon Packages (NSIS)",
+  "decisionReasoning": [
+    "Core Minimal Installer (NSIS) reduces initial download size by 58% (from 380 MB to 160 MB) while preserving full offline capability.",
+    "Heavy optional dependencies (Docling extraction engine ~350 MB) are decoupled into downloadable or demand-loaded addon packages.",
+    "Per-user non-admin installation is fully supported, bypassing UAC restrictions on locked enterprise workstations.",
+    "All automated lifecycle transitions (clean install, in-place upgrade, component repair, uninstallation) passed 100% verification.",
+    "User database and document embeddings in AppData/DATA_FOLDER are preserved across upgrades and uninstalls.",
+    "System WebView2 Evergreen runtime detection is integrated with silent bootstrapper fallback."
+  ],
+  "offlinePrivacyCompliant": true,
+  "metrics": {
+    "maxSizeSavingsPercent": 57.89,
+    "fastestInstallSec": 8,
+    "mostMaintainableVariant": "core_minimal_nsis_addon"
+  }
+}

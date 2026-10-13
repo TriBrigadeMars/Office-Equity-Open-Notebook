@@ -13,6 +13,7 @@
 
 const { spawn, execFileSync } = require('child_process');
 const net = require('net');
+const http = require('http');
 const path = require('path');
 const fs = require('fs');
 
@@ -108,6 +109,54 @@ async function waitForPort(port, timeoutMs = 60000, label = String(port)) {
   throw new Error(`Timed out waiting for ${label} on port ${port}`);
 }
 
+function isHttpReady(url, timeoutMs = 1000) {
+  return new Promise((resolve) => {
+    const req = http.get(url, (res) => {
+      res.on('data', () => {});
+      res.on('end', () => {
+        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 500) {
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      });
+    });
+    req.on('error', () => resolve(false));
+    req.setTimeout(timeoutMs, () => {
+      req.destroy();
+      resolve(false);
+    });
+  });
+}
+
+async function waitForServiceReady(port, url, timeoutMs = 60000, label = String(port)) {
+  const start = Date.now();
+  let portWasOpen = false;
+
+  while (Date.now() - start < timeoutMs) {
+    // Port open fallback until proven (check port first, then HTTP)
+    if (!portWasOpen && await isPortOpen(port)) {
+      portWasOpen = true;
+    }
+
+    if (portWasOpen) {
+      if (await isHttpReady(url)) {
+        return true;
+      }
+    }
+    await sleep(500);
+  }
+
+  // If we time out but the port was open, we consider it a fallback success
+  // per requirement: "keeping port-open fallback until proven"
+  if (portWasOpen) {
+    console.warn(`[WARNING] Service ${label} port ${port} is open but HTTP check at ${url} failed to become ready in time. Proceeding via port-open fallback.`);
+    return true;
+  }
+
+  throw new Error(`Timed out waiting for ${label} on port ${port} and url ${url}`);
+}
+
 /**
  * Start all services.
  * @param {object} cfg
@@ -123,7 +172,7 @@ async function startServices(cfg) {
   const frontendDir = path.join(runtimePath, 'frontend');
   const tiktokenCache = path.join(runtimePath, 'tiktoken-cache');
 
-  // Resolve Python and Node: bundled runtime first, then system PATH.
+  // Resolve Python: bundled runtime first, then system PATH.
   const python = resolvePython(runtimePath);
   if (!python) {
     throw new Error(
@@ -138,22 +187,7 @@ async function startServices(cfg) {
     );
   }
 
-  const node = resolveNode(runtimePath);
-  if (!node) {
-    throw new Error(
-      'Node.js was not found. Either install the bundled Node.js runtime, ' +
-        'or ensure node.exe (v18+) is on your PATH.'
-    );
-  }
-  if (node.invalidVersion) {
-    throw new Error(
-      `Node.js ${node.invalidVersion} was found at ${node.path}, but the frontend server requires Node.js v18+. ` +
-        'Install the bundled Node.js runtime or upgrade your system Node.js.'
-    );
-  }
-
   const pythonExe = python.path;
-  const nodeExe = node.path;
 
   for (const p of [backendPath, dataDir]) {
     fs.mkdirSync(p, { recursive: true });
@@ -256,7 +290,7 @@ async function startServices(cfg) {
     ['start', '--log', 'info', '--user', 'root', '--pass', 'root', '--bind', `127.0.0.1:${PORTS.surreal}`, `rocksdb:${surrealDbFile}`],
     { cwd: dataDir, env: backendEnv }
   );
-  await waitForPort(PORTS.surreal, 60000, 'SurrealDB');
+  await waitForServiceReady(PORTS.surreal, `http://127.0.0.1:${PORTS.surreal}/health`, 60000, 'SurrealDB');
 
   // 2. FastAPI backend
   spawnService(
@@ -265,7 +299,8 @@ async function startServices(cfg) {
     ['-m', 'uvicorn', 'api.main:app', '--host', '127.0.0.1', '--port', String(PORTS.api)],
     { cwd: backendPath, env: backendEnv }
   );
-  await waitForPort(PORTS.api, 120000, 'API');
+  // Backend provides a root endpoint / and maybe /health
+  await waitForServiceReady(PORTS.api, `http://127.0.0.1:${PORTS.api}/`, 120000, 'API');
 
   // 3. Background worker
   spawnService(
@@ -275,18 +310,9 @@ async function startServices(cfg) {
     { cwd: backendPath, env: backendEnv }
   );
 
-  // 4. Next.js frontend (standalone server)
-  const frontendEnv = {
-    ...process.env,
-    NODE_ENV: 'production',
-    PORT: String(PORTS.frontend),
-    HOSTNAME: '127.0.0.1',
-    INTERNAL_API_URL: `http://127.0.0.1:${PORTS.api}`,
-  };
-  spawnService('frontend', nodeExe, ['server.js'], { cwd: frontendDir, env: frontendEnv });
-
+  // 4. Native embedded frontend server (served on port 8502 by native host)
   if (cfg.waitReady !== false) {
-    await waitForPort(PORTS.frontend, 120000, 'Frontend');
+    await waitForServiceReady(PORTS.frontend, `http://127.0.0.1:${PORTS.frontend}/`, 120000, 'Frontend');
   }
 
   return {
@@ -324,4 +350,4 @@ async function startServices(cfg) {
   };
 }
 
-module.exports = { startServices, PORTS, isPortOpen, waitForPort };
+module.exports = { startServices, PORTS, isPortOpen, waitForPort, waitForServiceReady, isHttpReady };

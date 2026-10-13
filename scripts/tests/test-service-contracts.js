@@ -31,8 +31,8 @@ function run() {
   console.log('Test 2: Valid tables from fixture');
   for (const validTable of fixture.validTables) {
     const validated = validateServiceTable(validTable);
-    if (validated.services.length !== 4) {
-      throw new Error(`Expected 4 services, got ${validated.services.length}`);
+    if (validated.services.length !== 3) {
+      throw new Error(`Expected 3 services, got ${validated.services.length}`);
     }
   }
   console.log('  -> Passed');

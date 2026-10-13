@@ -1,0 +1,43 @@
+{
+  "selectedVariantId": "core_minimal_nsis_addon",
+  "selectedVariantName": "Core Minimal Installer + Optional Addon Packages (NSIS)",
+  "decisionReasoning": [
+    "Core Minimal Installer (NSIS) reduces initial download size by 58% (from 380 MB to 160 MB) while preserving full offline capability.",
+    "Heavy optional dependencies (Docling extraction engine ~350 MB) are decoupled into downloadable or demand-loaded addon packages.",
+    "Per-user non-admin installation is fully supported, bypassing UAC restrictions on locked enterprise workstations.",
+    "All automated lifecycle transitions (clean install, in-place upgrade, component repair, uninstallation) passed 100% verification.",
+    "User database and document embeddings in AppData/DATA_FOLDER are preserved across upgrades and uninstalls.",
+    "System WebView2 Evergreen runtime detection is integrated with silent bootstrapper fallback."
+  ],
+  "offlinePrivacyCompliant": true,
+  "metrics": {
+    "maxSizeSavingsPercent": 57.89,
+    "fastestInstallSec": 8,
+    "mostMaintainableVariant": "core_minimal_nsis_addon"
+  },
+  "specifications": {
+    "category": "modular_light",
+    "installerSize": "160.00 MB",
+    "installedSize": "320.00 MB",
+    "installDuration": "18s",
+    "upgradeDuration": "11s",
+    "repairDuration": "7s",
+    "uninstallDuration": "3s",
+    "requiresAdmin": false,
+    "offlineSupported": true
+  },
+  "tradeOffAnalysis": {
+    "advantages": [
+      "58% reduction in initial installer download size (from 380 MB down to 160 MB).",
+      "Decouples heavy optional dependencies (~350 MB Docling extraction engine) into separate addon packages.",
+      "Supports per-user installation without requiring Windows Administrator (UAC) privileges.",
+      "100% offline installation capable without network dependencies.",
+      "Preserves user databases and application data in AppData/DATA_FOLDER during upgrades and uninstalls."
+    ],
+    "disadvantages": [
+      "Users requiring document extraction must download or install the Docling addon package separately.",
+      "Requires clear UI indication when an optional addon feature is not yet present."
+    ],
+    "mitigation": "The application runtime detects missing optional addons (e.g. Docling) and gracefully falls back to lightweight standard text extractors while displaying a one-click addon installation prompt."
+  }
+}

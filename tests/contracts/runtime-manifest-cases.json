@@ -34,7 +34,7 @@
       "existingFiles": [
         "/mock/runtime/surreal/surreal.exe",
         "/mock/runtime/backend/open_notebook",
-        "/mock/runtime/frontend/server.js"
+        "/mock/runtime/frontend/static"
       ],
       "expectedValid": true,
       "expectedMissing": []
@@ -47,7 +47,7 @@
       "expectedValid": false,
       "expectedMissing": [
         "backend/open_notebook",
-        "frontend/server.js"
+        "frontend/static"
       ]
     }
   ]

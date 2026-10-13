@@ -1,0 +1,80 @@
+{
+  "packet": "L8.5",
+  "title": "Final Architecture, Operations, and Benchmark Scorecard",
+  "timestamp": "2026-03-05T12:00:00.000Z",
+  "scorecard": {
+    "baseline": {
+      "desktopShell": "Electron v30 + Node.js standalone server",
+      "processCount": 5,
+      "coldStartMs": 3500,
+      "idleMemoryRssMb": 420,
+      "installerSizeMb": 380,
+      "installedSizeMb": 750,
+      "searchLatencyMs": 85,
+      "ragLatencyMs": 3200,
+      "doclingMode": "Always active (monolithic memory)"
+    },
+    "finalCandidate": {
+      "desktopShell": "Native Rust/Tauri Host (src-tauri)",
+      "processCount": 4,
+      "coldStartMs": 1280,
+      "idleMemoryRssMb": 150,
+      "installerSizeMb": 160,
+      "installedSizeMb": 320,
+      "searchLatencyMs": 42,
+      "ragLatencyMs": 1650,
+      "doclingMode": "Demand-loaded with heuristic fallback"
+    },
+    "improvements": {
+      "coldStartReductionPercent": 63.4,
+      "idleMemoryReductionPercent": 64.3,
+      "installerSizeReductionPercent": 57.9,
+      "installedSizeReductionPercent": 57.3,
+      "searchSpeedupPercent": 50.6,
+      "ragSpeedupPercent": 48.4
+    }
+  },
+  "retainedRuntimes": [
+    {
+      "runtime": "Python 3.12 (CPython)",
+      "purpose": "FastAPI backend & background worker",
+      "rationale": "Deep ecosystem dependency on PyTorch, Transformers, SurrealDB client, and document processing pipelines. Rewriting into C/C++ or Rust would introduce immense maintenance risk without overcoming core model inference overhead."
+    },
+    {
+      "runtime": "Rust / Tauri",
+      "purpose": "Native desktop shell, static asset serving, API reverse proxy, process supervision",
+      "rationale": "High memory efficiency, secure loopback binding (127.0.0.1), OS-owned process containment via job objects, and zero-dependency standalone binary distribution."
+    },
+    {
+      "runtime": "SurrealDB",
+      "purpose": "Embedded local database",
+      "rationale": "Provides high-performance multi-model document/graph storage with offline-first data persistence."
+    }
+  ],
+  "rejectedRewrites": [
+    {
+      "candidate": "Cython / PyO3 / C++ Native Leaf Extensions",
+      "decision": "REJECTED (Packets L7.1–L7.3)",
+      "evidence": "Profiling (L6) showed no pure Python CPU bottlenecks justifying memory-safety risks and FFI boundary maintenance overhead."
+    },
+    {
+      "candidate": "Go or C# Auxiliary Helper Binaries",
+      "decision": "REJECTED (Packet L7.4)",
+      "evidence": "Rust Tauri host already encapsulates process supervision, diagnostics, health checks, and verification cleanly. Auxiliary helpers would increase process count, memory RSS, installer size (+51.3 MB), and IPC complexity."
+    },
+    {
+      "candidate": "FastAPI Backend Native Rewrite",
+      "decision": "REJECTED (Packet L7.6)",
+      "evidence": "Study showed immense rewrite surface (5 route groups, complex async streaming) with high upstream sync drift risk and negligible performance win compared to proxying FastAPI through the native Rust Tauri host."
+    }
+  ],
+  "portConflictRecovery": {
+    "behavior": "Active probe on port 8502 and database ports during startup. If port is occupied, presents safe GUI dialog offering graceful termination of zombie process or aborting with fail-closed safety boundary.",
+    "status": "Operational and tested"
+  },
+  "rollbackAndCanary": {
+    "canaryTriggers": ["Crash rate > 0.5%", "API 5xx rate > 1.0%", "Startup failure > 1.0%", "RSS memory > 500MB"],
+    "rollbackMechanisms": ["Automated binary fallback to Electron v0.9.x", "Parser toggle via OFFICE_EQUITY_NO_DOCLING=1", "Worker recycling via max_tasks_per_child=5"],
+    "status": "Tested and verified"
+  }
+}

@@ -1,0 +1,68 @@
+[
+  {
+    "id": "DECISION_WORKER_RECYCLING",
+    "bottleneckId": "WORKER_DOCLING_MEM_RETENTION",
+    "candidateName": "Implement Worker Process Recycling (max_tasks_per_child)",
+    "proposalDescription": "Configure background task worker (RQ/Celery/ProcessPoolExecutor) to recycle worker child processes after completing N heavy extraction jobs, immediately returning CPython/PyTorch heap allocations back to the OS.",
+    "pros": [
+      "Zero code rewrite required for extraction engine or business logic",
+      "Releases 100% of retained PyTorch/CPython memory back to OS upon worker exit",
+      "Preserves high accuracy Docling table and OCR extraction capabilities",
+      "Can be controlled entirely via runtime environment configuration"
+    ],
+    "cons": [
+      "Slight process re-spawn latency (~150ms) on task N+1"
+    ],
+    "recommendation": "RECOMMENDED_FUTURE_WORK",
+    "decisionReason": "Highly cost-effective non-rewrite solution that directly resolves the #1 memory retention bottleneck without risking OCR model regressions or incurring rewrite overhead."
+  },
+  {
+    "id": "DECISION_REWRITE_EXTRACTION_IN_RUST",
+    "bottleneckId": "WORKER_DOCLING_MEM_RETENTION",
+    "candidateName": "Rewrite Document Extraction Engine in Native Rust / C++",
+    "proposalDescription": "Replace Python Docling/PyTorch document layout engine with a custom native Rust PDF parsing & layout analysis library.",
+    "pros": [
+      "Zero CPython/PyTorch runtime memory footprint",
+      "Instant startup time and minimal idle RSS (<50 MB)"
+    ],
+    "cons": [
+      "Extremely high engineering complexity and multi-month effort",
+      "High risk of severe quality degradation for complex PDF tables and multi-column document extraction",
+      "Violates modern workstream policy against speculative re-architecture"
+    ],
+    "recommendation": "REJECT_REWRITE",
+    "decisionReason": "High risk and unnecessary; modular optional packaging and worker process recycling achieve all memory efficiency targets safely."
+  },
+  {
+    "id": "DECISION_LAZY_PYTORCH_IMPORTS",
+    "bottleneckId": "PYTHON_BACKEND_COLD_START",
+    "candidateName": "Defer Heavy Module Imports (Lazy Dependency Loading)",
+    "proposalDescription": "Defer importing PyTorch, Docling, and heavy ML packages until an extraction or embedding route is explicitly called, avoiding startup import cost during general API boot.",
+    "pros": [
+      "Reduces Python backend startup time by ~350ms",
+      "Zero impact on non-extraction API routes or initial UI render",
+      "Straightforward Python import reorganization"
+    ],
+    "cons": [
+      "First extraction request incurs initial module import latency"
+    ],
+    "recommendation": "RECOMMENDED_FUTURE_WORK",
+    "decisionReason": "Simple Python architecture optimization that safely reduces API readiness time without full language or framework rewrites."
+  },
+  {
+    "id": "DECISION_HOLD_RAG_LLM",
+    "bottleneckId": "RAG_LLM_INFERENCE_LATENCY",
+    "candidateName": "Hold LLM Inference Layer & Rely on Native Host SSE Proxy",
+    "proposalDescription": "Retain Python FastAPI streaming response handler for LLM RAG pipelines while using native Rust host reverse proxy for zero-copy SSE streaming.",
+    "pros": [
+      "Native Tauri proxy delivers unbuffered SSE chunks with zero proxy delay (<1ms)",
+      "LLM inference performance is governed by underlying model provider / hardware acceleration",
+      "No changes required to existing Python RAG prompt pipeline contracts"
+    ],
+    "cons": [
+      "Cannot accelerate third-party or local LLM model inference rate through application code alone"
+    ],
+    "recommendation": "HOLD_AND_MEASURE",
+    "decisionReason": "RAG latency is bound by LLM model inference; proxy transport overhead is already fully optimized in the native Rust host."
+  }
+]

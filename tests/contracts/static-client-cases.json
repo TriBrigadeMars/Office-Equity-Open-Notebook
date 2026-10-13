@@ -1,0 +1,77 @@
+{
+  "version": "1.0.0",
+  "routes": [
+    {
+      "id": "ROUTE_ROOT_001",
+      "requestedPath": "/",
+      "expectedRoute": "/",
+      "isDynamic": false,
+      "expectedFallbackToSpa": false
+    },
+    {
+      "id": "ROUTE_NOTEBOOKS_001",
+      "requestedPath": "/notebooks/nb-101",
+      "expectedRoute": "/notebooks/[id]",
+      "isDynamic": true,
+      "expectedFallbackToSpa": true
+    },
+    {
+      "id": "ROUTE_NOTES_001",
+      "requestedPath": "/notes/note-202",
+      "expectedRoute": "/notes/[id]",
+      "isDynamic": true,
+      "expectedFallbackToSpa": true
+    },
+    {
+      "id": "ROUTE_SOURCES_001",
+      "requestedPath": "/sources/src-303",
+      "expectedRoute": "/sources/[id]",
+      "isDynamic": true,
+      "expectedFallbackToSpa": true
+    },
+    {
+      "id": "ROUTE_SETTINGS_001",
+      "requestedPath": "/settings",
+      "expectedRoute": "/settings",
+      "isDynamic": false,
+      "expectedFallbackToSpa": false
+    },
+    {
+      "id": "ROUTE_MODELS_001",
+      "requestedPath": "/models",
+      "expectedRoute": "/models",
+      "isDynamic": false,
+      "expectedFallbackToSpa": false
+    },
+    {
+      "id": "ROUTE_PODCASTS_001",
+      "requestedPath": "/podcasts",
+      "expectedRoute": "/podcasts",
+      "isDynamic": false,
+      "expectedFallbackToSpa": false
+    }
+  ],
+  "blockers": [
+    {
+      "id": "BLOCKER_001_NO_NODE_REVERSE_PROXY",
+      "title": "Absence of Node.js Reverse Proxy for /api/*",
+      "description": "Static client export has no built-in Next server rewrite proxy to forward /api/* calls to FastAPI on 127.0.0.1:5055.",
+      "impact": "Requires host application (Tauri/Rust or Wails) to embed a lightweight loopback proxy or enable loopback CORS.",
+      "mitigation": "Configure client-safe API host endpoint and delegate loopback proxying to native host in Section 19."
+    },
+    {
+      "id": "BLOCKER_002_SPA_DEEP_ROUTE_FALLBACK",
+      "title": "SPA Deep Route Dynamic Fallback",
+      "description": "Refreshing dynamic routes (e.g., /notebooks/123, /notes/456) in a static web server triggers HTTP 404.",
+      "impact": "Static file server must serve /index.html for all non-file client routes.",
+      "mitigation": "Implement explicit SPA fallback rules in embedded native host web server (try_files $uri /index.html)."
+    },
+    {
+      "id": "BLOCKER_003_SERVER_ENV_ELIMINATION",
+      "title": "Server-Only Environment Variable Dependency",
+      "description": "The current server relies on process.env.INTERNAL_API_URL and process.env.PORT at Node.js startup.",
+      "impact": "Client-side bundle cannot access server-only process.env variables at runtime.",
+      "mitigation": "Inject client-safe window.__CONFIG__ or NEXT_PUBLIC_API_URL runtime configuration path."
+    }
+  ]
+}

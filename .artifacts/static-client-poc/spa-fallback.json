@@ -1,0 +1,41 @@
+{
+  "version": "1.0.0",
+  "fallbackDestination": "/index.html",
+  "rules": [
+    {
+      "matchPattern": "/",
+      "destination": "/index.html",
+      "isDynamic": false
+    },
+    {
+      "matchPattern": "/notebooks/*",
+      "destination": "/index.html",
+      "isDynamic": true
+    },
+    {
+      "matchPattern": "/notes/*",
+      "destination": "/index.html",
+      "isDynamic": true
+    },
+    {
+      "matchPattern": "/sources/*",
+      "destination": "/index.html",
+      "isDynamic": true
+    },
+    {
+      "matchPattern": "/settings",
+      "destination": "/settings.html",
+      "isDynamic": false
+    },
+    {
+      "matchPattern": "/models",
+      "destination": "/models.html",
+      "isDynamic": false
+    },
+    {
+      "matchPattern": "/podcasts",
+      "destination": "/podcasts.html",
+      "isDynamic": false
+    }
+  ]
+}

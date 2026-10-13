@@ -1,0 +1,60 @@
+name: Office of Equity Open Notebook CI & Release Gates
+
+on:
+  push:
+    branches: [ main, master, release/* ]
+  pull_request:
+    branches: [ main, master, release/* ]
+
+jobs:
+  ci-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Lane 1 - Fast Lane (TypeCheck & Unit Tests)
+        run: |
+          npm run build:types
+          node scripts/tests/test-service-contracts.js
+          node scripts/tests/test-readiness.js
+
+      - name: Lane 2 - Integration Lane (API Proxy & Loopback Audit)
+        run: |
+          node scripts/tests/test-native-host-proxy.js
+          node scripts/tests/test-loopback-audit.js
+          node scripts/tests/test-process-management.js
+
+      - name: Lane 3 - Stress & Chaos Lane (Port Conflicts & Resilience)
+        run: |
+          node scripts/tests/test-port-conflict.js
+          node scripts/tests/test-compatibility-harness.js
+
+      - name: Lane 4 - RAG & Golden Extraction Regression Lane
+        run: |
+          node scripts/tests/test-golden-regression.js
+          node scripts/tests/test-no-docling-runtime.js
+
+      - name: Lane 5 - Packaging & Clean Machine Installer Lane
+        run: |
+          node scripts/tests/test-modular-packaging.js
+          node scripts/tests/test-installer-experiments.js
+          node scripts/tests/test-clean-machine-validation.js
+
+      - name: Lane 6 - Performance & Worker Concurrency Lane
+        run: |
+          node scripts/tests/test-performance-harness.js
+          node scripts/tests/test-worker-concurrency.js
+          node scripts/tests/test-reprofile-app.js
+
+      - name: Run Master Mechanical Verifier
+        run: node scripts/orchestrator/verifier.js

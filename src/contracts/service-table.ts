@@ -22,10 +22,11 @@ export const SERVICE_TABLE: ServiceTable = Object.freeze({
     {
       name: 'surrealdb',
       command: 'surreal',
-      args: ['start', '--log', 'info', '--user', 'root', '--pass', 'root'],
+      args: ['start', '--log', 'info', '--user', 'root', '--pass', 'root', '--bind', '127.0.0.1:8000'],
       readinessPolicy: {
-        type: 'port' as const,
+        type: 'http' as const,
         port: DEFAULT_PORTS.surreal,
+        httpUrl: `http://127.0.0.1:${DEFAULT_PORTS.surreal}/health`,
         timeoutMs: 60000,
         label: 'SurrealDB',
       },
@@ -33,10 +34,11 @@ export const SERVICE_TABLE: ServiceTable = Object.freeze({
     {
       name: 'api',
       command: 'python',
-      args: ['-m', 'uvicorn', 'api.main:app'],
+      args: ['-m', 'uvicorn', 'api.main:app', '--host', '127.0.0.1', '--port', '5055'],
       readinessPolicy: {
-        type: 'port' as const,
+        type: 'http' as const,
         port: DEFAULT_PORTS.api,
+        httpUrl: `http://127.0.0.1:${DEFAULT_PORTS.api}/`,
         timeoutMs: 120000,
         label: 'API',
       },
@@ -47,17 +49,6 @@ export const SERVICE_TABLE: ServiceTable = Object.freeze({
       args: ['-m', 'surreal_commands.cli.worker', '--import-modules', 'commands', '--max-tasks', '5'],
       readinessPolicy: {
         type: 'process' as const,
-      },
-    },
-    {
-      name: 'frontend',
-      command: 'node',
-      args: ['server.js'],
-      readinessPolicy: {
-        type: 'port' as const,
-        port: DEFAULT_PORTS.frontend,
-        timeoutMs: 120000,
-        label: 'Frontend',
       },
     },
   ],

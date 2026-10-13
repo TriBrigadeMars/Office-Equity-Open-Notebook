@@ -60,8 +60,7 @@ function main() {
     ['python', 'python.exe'],
     ['backend', 'open_notebook'],
     ['surreal', 'surreal.exe'],
-    ['node', 'node.exe'],
-    ['frontend', 'server.js'],
+    ['frontend', 'static'],
   ];
   const missing = required
     .map(([dir, file]) => path.join(RUNTIME_DIR, dir, file))

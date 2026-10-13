@@ -14,8 +14,25 @@ fn test_compatibility_scenarios() {
 
     let pure = root["pureCases"].as_array().unwrap();
     for case in pure {
-        // Implement test matching for candidates
-        println!("Checking pure case {:?}", case["id"]);
+        let id = case["id"].as_str().unwrap();
+        let cat = case["category"].as_str().unwrap();
+        println!("Checking pure case {:?} in category {:?}", id, cat);
+        match cat {
+            "window-policy" => {
+                let input = &case["input"];
+                let target = input["targetUrl"].as_str().unwrap();
+                let frontend = input["frontendUrl"].as_str().unwrap();
+                let is_valid = target.starts_with(frontend);
+                println!("Window policy case {}: valid={}", id, is_valid);
+            },
+            "process-manager-shutdown" => {
+                let services = case["input"].as_array().unwrap();
+                let mut reversed = services.clone();
+                reversed.reverse();
+                assert_eq!(reversed, case["expectedOutput"].as_array().unwrap());
+            },
+            _ => {}
+        }
     }
 
     let sup = root["supervisionScenarios"].as_array().unwrap();
@@ -23,3 +40,4 @@ fn test_compatibility_scenarios() {
         println!("Checking supervision case {:?}", case["id"]);
     }
 }
+

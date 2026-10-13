@@ -1,0 +1,68 @@
+{
+  "packet": "L1.5",
+  "timestamp": "2026-10-10T22:43:44.272Z",
+  "current_default": {
+    "flag": "--max-tasks 5",
+    "maxConcurrentTasks": 5,
+    "queue": "surreal_commands"
+  },
+  "workloads": [
+    {
+      "name": "light",
+      "description": "Single note metadata update & embedding lookup",
+      "taskCount": 10
+    },
+    {
+      "name": "mixed",
+      "description": "Concurrent PDF chunking, indexing, and search queries",
+      "taskCount": 20
+    },
+    {
+      "name": "heavy",
+      "description": "Batch document extraction, multi-chunk OCR embedding generation",
+      "taskCount": 30
+    }
+  ],
+  "candidates": [
+    {
+      "concurrency": 1,
+      "throughputTasksPerSec": 4.8,
+      "latencyP95Ms": 240,
+      "peakMemoryRssBytes": 184549376,
+      "peakCpuPercent": 24.5,
+      "failureRetryRate": 0,
+      "uiResponsiveness": "excellent (0 dropped frames)"
+    },
+    {
+      "concurrency": 2,
+      "throughputTasksPerSec": 8.6,
+      "latencyP95Ms": 265,
+      "peakMemoryRssBytes": 241172480,
+      "peakCpuPercent": 44,
+      "failureRetryRate": 0,
+      "uiResponsiveness": "excellent (0 dropped frames)"
+    },
+    {
+      "concurrency": 3,
+      "throughputTasksPerSec": 10.1,
+      "latencyP95Ms": 340,
+      "peakMemoryRssBytes": 346030080,
+      "peakCpuPercent": 68.2,
+      "failureRetryRate": 0,
+      "uiResponsiveness": "good"
+    },
+    {
+      "concurrency": 5,
+      "throughputTasksPerSec": 10.9,
+      "latencyP95Ms": 520,
+      "peakMemoryRssBytes": 576716800,
+      "peakCpuPercent": 91.5,
+      "failureRetryRate": 0.02,
+      "uiResponsiveness": "noticeable stutter / API thread pool contention"
+    }
+  ],
+  "recommendation": {
+    "recommendedDefault": 2,
+    "rationale": "Concurrency 2 delivers 79% of max throughput while cutting peak memory by 58% (saving ~320 MB RSS) and eliminating UI thread pool contention. Concurrency 5 causes 91% CPU spikes and noticeable desktop UI stutter for only an 8% throughput gain over concurrency 3."
+  }
+}
